@@ -7,6 +7,7 @@ import CheckoutPage from "./components/marketplace/CheckoutPage";
 import OrdersPage from "./components/marketplace/OrdersPage";
 import AdminLogin from "./components/admin/AdminLogin";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import ResetPassword from "./components/marketplace/ResetPassword"; // 👈 Import your new recovery view component
 
 function App() {
   // ==========================================================================
@@ -39,7 +40,7 @@ function App() {
       {/* 🛒 PUBLIC MARKETPLACE ROUTE */}
       <Route
         path="/"
-        element={
+        element = {
           <NalapakaMarketplace
             cartItems={cartItems}
             setCartItems={setCartItems}
@@ -49,10 +50,13 @@ function App() {
         }
       />
 
+      {/* 🔑 STANDALONE PASSWORD RESET LANDING GATEWAY */}
+      <Route path="/reset-password" element={<ResetPassword />} /> {/* 👈 Added public fallback hook */}
+
       {/* 📦 USER ORDER HISTORY ROUTE */}
       <Route
         path="/orders"
-        element={
+        element = {
           currentUser ? (
             <OrdersPage currentUser={currentUser} />
           ) : (
@@ -64,7 +68,7 @@ function App() {
       {/* 💳 CHECKOUT FLOW ROUTE */}
       <Route
         path="/checkout"
-        element={
+        element = {
           <CheckoutPage
             cartItems={cartItems}
             setCartItems={setCartItems}
@@ -76,7 +80,7 @@ function App() {
       {/* 🛡️ ADMIN LOGIN INTERFACE */}
       <Route
         path="/admin/login"
-        element={
+        element = {
           currentUser && currentUser.role === "Admin" ? (
             <Navigate to="/admin/dashboard" replace />
           ) : (
@@ -88,7 +92,7 @@ function App() {
       {/* 📊 PROTECTED ADMINISTRATIVE DASHBOARD ROUTE */}
       <Route
         path="/admin/dashboard"
-        element={
+        element = {
           currentUser && currentUser.role === "Admin" ? (
             <AdminDashboard currentUser={currentUser} setCurrentUser={setCurrentUser} />
           ) : (
