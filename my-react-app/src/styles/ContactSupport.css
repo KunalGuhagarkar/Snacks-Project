@@ -1,0 +1,190 @@
+.support-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.support-modal-window {
+  background: #ffffff;
+  width: 92%;
+  max-width: 520px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.support-modal-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.tab-btn {
+  padding: 16px 20px;
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  color: #2563eb;
+  background: #ffffff;
+  box-shadow: inset 0 -2px 0 #2563eb;
+}
+
+.modal-close-x {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.support-modal-body {
+  padding: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* Form Layout Styles */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.support-form h3, .support-history-view h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.form-group select, .form-group textarea {
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.form-group select:focus, .form-group textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.support-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.support-submit-btn:hover {
+  background: #1d4ed8;
+}
+
+.support-submit-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* History Ledger Layout List CSS */
+.tickets-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ticket-status-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.ticket-status-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ticket-ref {
+  font-family: monospace;
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.ticket-subject-badge {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.ticket-msg-snippet {
+  font-size: 0.9rem;
+  color: #1e293b;
+  margin: 10px 0 6px 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.ticket-date {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: right;
+}
+
+/* Core Framework Status Pills CSS Matrix */
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-pending { background: #fef3c7; color: #d97706; }
+.status-in-progress { background: #dbeafe; color: #2563eb; }
+.status-resolved { background: #dcfce7; color: #16a34a; }
+.status-spam { background: #fee2e2; color: #dc2626; }
+
+.support-status-loader, .support-history-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: #64748b;
+}

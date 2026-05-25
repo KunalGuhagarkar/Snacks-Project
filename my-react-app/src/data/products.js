@@ -1,0 +1,12 @@
+export const INITIAL_PRODUCTS = [
+  { id: 1, emoji: "🌀", name: "Kai Murukku", brand: "Sweet Karam Coffee", brandKey: "skc", price: 189, weight: "200g", desc: "Hand-pressed spiral murukku, crispy & lightly salted.", tags: ["veg", "gf"], badge: "hot", category: "murukku", filter: "bestseller" },
+  { id: 2, emoji: "🍌", name: "Nendran Banana Chips", brand: "Kerala Foods Co.", brandKey: "kerala", price: 164, weight: "150g", desc: "Crispy Kerala banana chips in coconut oil.", tags: ["veg", "gf"], badge: "", category: "chips", filter: "bestseller" },
+  { id: 3, emoji: "🍬", name: "Ghee Mysore Pak", brand: "Grand Sweets", brandKey: "grand", price: 299, weight: "250g", desc: "Classic Mysore Pak with pure desi ghee.", tags: ["veg"], badge: "hot", category: "sweets", filter: "bestseller" },
+  { id: 4, emoji: "🥜", name: "Kara Boondhi", brand: "Sweet Karam Coffee", brandKey: "skc", price: 149, weight: "200g", desc: "Spiced chickpea pearls with peanuts & curry leaves.", tags: ["veg", "gf"], badge: "", category: "mixture", filter: "under200" },
+  { id: 5, emoji: "🫓", name: "Ribbon Pakoda", brand: "Sri Krishna Sweets", brandKey: "skrishna", price: 159, weight: "200g", desc: "Thin lattice-shaped rice & gram flour snack.", tags: ["veg"], badge: "new", category: "murukku", filter: "new" },
+  { id: 6, emoji: "🍡", name: "Peanut Chikki", brand: "Anand Sweets", brandKey: "anand", price: 129, weight: "200g", desc: "Crunchy jaggery-coated peanuts, mildly sweet.", tags: ["veg", "gf"], badge: "", category: "sweets", filter: "under200" },
+  { id: 7, emoji: "🥣", name: "Madras Mixture", brand: "Grand Sweets", brandKey: "grand", price: 179, weight: "250g", desc: "A classic medley of sev, boondi & fried dals.", tags: ["veg"], badge: "", category: "mixture", filter: "bestseller" },
+  { id: 8, emoji: "🌶️", name: "Andhra Murukku", brand: "Adyar Ananda Bhavan", brandKey: "aab", price: 199, weight: "200g", desc: "Fiery Andhra-style murukku with red chilli.", tags: ["veg", "spicy"], badge: "new", category: "murukku", filter: "new" },
+  { id: 9, emoji: "🧆", name: "Nippattu", brand: "Anand Sweets", brandKey: "anand", price: 149, weight: "200g", desc: "Light, airy Karnataka rice crackers with spices.", tags: ["veg"], badge: "", category: "mixture", filter: "under200" },
+  { id: 10, emoji: "🫚", name: "Kerala Tapioca Chips", brand: "Kerala Foods Co.", brandKey: "kerala", price: 139, weight: "150g", desc: "Cassava chips with a hint of chilli & salt.", tags: ["veg", "gf"], badge: "hot", category: "chips", filter: "bestseller" }
+];
