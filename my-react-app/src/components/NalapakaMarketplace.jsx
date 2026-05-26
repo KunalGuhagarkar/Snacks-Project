@@ -1,5 +1,7 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import "../App.css";
+import apiFetch from "../config/api";
+import { loadCartStorage, saveCartStorage, loadWishlistStorage, saveWishlistStorage } from "../utils/storage";
 
 // Component Imports
 import AnnouncementBar from "./marketplace/AnnouncementBar";
@@ -25,10 +27,7 @@ export default function NalapakaMarketplace({
   currentUser,
   setCurrentUser,
 }) {
-  const [wishlist, setWishlist] = useState(() => {
-    const savedWish = localStorage.getItem("nalapaka_wishlist");
-    return savedWish ? JSON.parse(savedWish) : {};
-  });
+  const [wishlist, setWishlist] = useState(() => loadWishlistStorage());
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -50,6 +49,7 @@ export default function NalapakaMarketplace({
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const abortControllers = useRef({});
 
   // Search Debouncing Tracker
   useEffect(() => {
@@ -78,33 +78,38 @@ export default function NalapakaMarketplace({
 
   // Fetch Static Assets (Brands Matrix)
   useEffect(() => {
-    let isMounted = true;
-    fetch("http://localhost:5000/api/brands")
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && Array.isArray(data)) setBrands(data);
-      })
-      .catch((err) => console.error("Error loading brands matrix:", err));
-
-    return () => { isMounted = false; };
+    const ac = new AbortController();
+    abortControllers.current.brands = ac;
+    (async () => {
+      try {
+        const data = await apiFetch("/api/brands", { signal: ac.signal });
+        if (Array.isArray(data)) setBrands(data.map(b => ({ ...b, id: b.id || b._id })));
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Error loading brands matrix:", err);
+      }
+    })();
+    return () => { ac.abort(); };
   }, []);
 
   // Fetch Static Assets (Categories Matrix)
   useEffect(() => {
-    let isMounted = true;
-    fetch("http://localhost:5000/api/categories")
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && Array.isArray(data)) setCategories(data);
-      })
-      .catch((err) => console.error("Error loading categories matrix:", err));
-
-    return () => { isMounted = false; };
+    const ac = new AbortController();
+    abortControllers.current.categories = ac;
+    (async () => {
+      try {
+        const data = await apiFetch("/api/categories", { signal: ac.signal });
+        if (Array.isArray(data)) setCategories(data.map(c => ({ ...c, id: c.id || c._id })));
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Error loading categories matrix:", err);
+      }
+    })();
+    return () => { ac.abort(); };
   }, []);
 
   // Dynamic Product Feed Fetcher Engine
   useEffect(() => {
-    let isMounted = true;
+    const ac = new AbortController();
+    abortControllers.current.products = ac;
     const queryParams = new URLSearchParams({
       filter: activeFilter,
       brand: activeBrand,
@@ -112,34 +117,38 @@ export default function NalapakaMarketplace({
       search: debouncedSearchQuery.trim(),
     });
 
-    fetch(`http://localhost:5000/api/products?${queryParams.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && Array.isArray(data)) setProducts(data);
-      })
-      .catch((err) => console.error("Error loading products:", err))
-      .finally(() => {
-        if (isMounted) {
-          setIsInitialLoading(false);
-          setIsFiltering(false);
-        }
-      });
+    (async () => {
+      try {
+        const data = await apiFetch(`/api/products?${queryParams.toString()}`, { signal: ac.signal });
+        if (Array.isArray(data)) setProducts(data.map(p => ({ ...p, id: p.id || p._id })));
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Error loading products:", err);
+      } finally {
+        setIsInitialLoading(false);
+        setIsFiltering(false);
+      }
+    })();
 
-    return () => { isMounted = false; };
+    return () => { ac.abort(); };
   }, [activeFilter, activeBrand, activeCat, debouncedSearchQuery]);
 
   // Sync Global User Shopping Session Cart Upstream
   useEffect(() => {
-    if (!currentUser?.id) return;
-    let isMounted = true;
+    if (!currentUser?.id) {
+      // restore cached cart when no user
+      const cached = loadCartStorage();
+      if (cached.length) setCartItems(cached);
+      return;
+    }
+    const ac = new AbortController();
+    abortControllers.current.cart = ac;
 
-    fetch(`http://localhost:5000/api/cart/${currentUser.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isMounted) return;
+    (async () => {
+      try {
+        const data = await apiFetch(`/api/cart/${currentUser.id}`, { signal: ac.signal });
         const safeDataPayload = Array.isArray(data) ? data : data.items || [];
         const formattedCart = safeDataPayload.map((item) => ({
-          id: item.product_id || item.id,
+          id: item.product_id || item.id || item._id,
           name: item.name,
           price: item.price,
           category: item.category,
@@ -147,19 +156,18 @@ export default function NalapakaMarketplace({
           quantity: item.quantity,
           stock_quantity: item.stock_quantity,
         }));
-        
         setCartItems(formattedCart);
-        localStorage.setItem("nalapaka_cart", JSON.stringify(formattedCart));
-      })
-      .catch((err) => {
-        console.error("Cart sync down failure, recovering cached local copy:", err);
-        const localCachedCart = localStorage.getItem("nalapaka_cart");
-        if (localCachedCart && isMounted) {
-          setCartItems(JSON.parse(localCachedCart));
+        saveCartStorage(formattedCart);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Cart sync down failure, recovering cached local copy:", err);
+          const localCachedCart = loadCartStorage();
+          if (localCachedCart.length) setCartItems(localCachedCart);
         }
-      });
+      }
+    })();
 
-    return () => { isMounted = false; };
+    return () => { ac.abort(); };
   }, [currentUser?.id, setCartItems]); // Memoized bounds prevent infinite closed-loop lifecycle execution
 
   // Toast System Cleaners
@@ -195,17 +203,17 @@ export default function NalapakaMarketplace({
   };
 
   // Adaptive Multi-Sourced Item Ingestor
-  const handleAddToCart = async (e, productId, productName, customQty = 1) => {
+  const handleAddToCart = useCallback(async (e, productId, productName, customQty = 1) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
 
-    // Trace across active product feeds AND current cart records to bypass search isolation bugs
-    const productData = products.find((p) => p.id === productId) || cartItems.find((item) => item.id === productId);
+    const pid = productId;
+    const productData = products.find((p) => (p.id === pid || p._id === pid)) || cartItems.find((item) => (item.id === pid || item._id === pid));
     if (!productData) {
       showToast("⚠️ Could not trace item specifications. Please refresh.");
       return;
     }
 
-    const currentCartRecord = cartItems.find((item) => item.id === productId);
+    const currentCartRecord = cartItems.find((item) => (item.id === pid || item._id === pid));
     const plannedQuantity = currentCartRecord ? currentCartRecord.quantity + customQty : customQty;
     const maxAvailableStock = productData.stock_quantity !== undefined ? productData.stock_quantity : 999;
 
@@ -216,39 +224,34 @@ export default function NalapakaMarketplace({
 
     setCartItems((prevItems) => {
       let nextItems;
-      const existingItem = prevItems.find((item) => item.id === productId);
+      const existingItem = prevItems.find((item) => (item.id === pid || item._id === pid));
       if (existingItem) {
         nextItems = prevItems.map((item) =>
-          item.id === productId
+          (item.id === pid || item._id === pid)
             ? { ...item, quantity: item.quantity + customQty }
             : item
         );
       } else {
-        nextItems = [...prevItems, { ...productData, quantity: customQty }];
+        nextItems = [...prevItems, { ...productData, id: productData.id || productData._id, quantity: customQty }];
       }
-      localStorage.setItem("nalapaka_cart", JSON.stringify(nextItems));
+      saveCartStorage(nextItems);
       return nextItems;
     });
 
     if (currentUser?.id) {
       try {
-        await fetch("http://localhost:5000/api/cart", {
+        await apiFetch(`/api/cart`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: currentUser.id,
-            productId,
-            quantity: customQty,
-          }),
+          body: JSON.stringify({ userId: currentUser.id, productId: pid, quantity: customQty }),
         });
       } catch (err) {
         console.error("Failed to commit item update upstream:", err);
       }
     }
     showToast(`🛒 Added ${customQty}x "${productName}" to basket.`);
-  };
+  }, [products, cartItems, currentUser, setCartItems, showToast]);
 
-  const handleUpdateQuantity = async (productId, change) => {
+  const handleUpdateQuantity = useCallback(async (productId, change) => {
     let updatedQuantity = 0;
     let stockReachedExceeded = false;
     let targetProductName = "Item";
@@ -276,7 +279,7 @@ export default function NalapakaMarketplace({
         })
         .filter(Boolean);
 
-      localStorage.setItem("nalapaka_cart", JSON.stringify(nextItems));
+      saveCartStorage(nextItems);
       return nextItems;
     });
 
@@ -288,38 +291,31 @@ export default function NalapakaMarketplace({
     if (currentUser?.id) {
       try {
         if (updatedQuantity <= 0) {
-          await fetch("http://localhost:5000/api/cart", {
+          await apiFetch("/api/cart", {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: currentUser.id, productId }),
           });
         } else {
-          await fetch("http://localhost:5000/api/cart", {
+          await apiFetch("/api/cart", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: currentUser.id,
-              productId,
-              quantity: change,
-            }),
+            body: JSON.stringify({ userId: currentUser.id, productId, quantity: change }),
           });
         }
       } catch (err) {
         console.error(err);
       }
     }
-  };
+  }, [products, cartItems, currentUser, setCartItems, showToast]);
 
-  const handleToggleWishlist = (e, id) => {
+  const handleToggleWishlist = useCallback((e, id) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
-
     const stringId = String(id);
     setWishlist((prev) => {
       const next = { ...prev, [stringId]: !prev[stringId] };
-      localStorage.setItem("nalapaka_wishlist", JSON.stringify(next));
+      saveWishlistStorage(next);
       return next;
     });
-  };
+  }, []);
 
   return (
     <div className="marketplace-container">

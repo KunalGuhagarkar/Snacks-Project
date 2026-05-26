@@ -23,9 +23,23 @@
   --white: #ffffff;
   --border: rgba(28, 20, 9, 0.1);
   --border-med: rgba(28, 20, 9, 0.16);
+  --nav-height: 66px;
+  --focus-ring: 3px;
   
   /* Shared Animation Hooks */
   --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-smooth: none;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 .marketplace-container {
@@ -72,6 +86,13 @@
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .pcard-main-thumbnail, .marquee-inner {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -301,7 +322,7 @@ nav {
   align-items: center;
   gap: 24px;
   padding: 0 6vw;
-  height: 66px;
+  height: var(--nav-height);
 }
 
 .logo {
@@ -349,6 +370,21 @@ nav {
 
 .search-bar input::placeholder {
   color: var(--stone-light);
+}
+
+/* Global focus-visible styles for keyboard users */
+:focus-visible {
+  outline: var(--focus-ring) solid var(--saffron);
+  outline-offset: 3px;
+}
+
+/* Make non-button clickable wrappers keyboard accessible via CSS (requires tabindex in HTML/JSX) */
+.product-card-click-wrapper {
+  cursor: pointer;
+}
+.product-card-click-wrapper:focus-visible {
+  box-shadow: 0 0 0 4px rgba(224, 123, 42, 0.12);
+  border-radius: 8px;
 }
 
 .search-icon {
@@ -754,6 +790,10 @@ nav {
   scrollbar-width: none;
 }
 
+.cat-row:focus {
+  outline: none;
+}
+
 .cat-row::-webkit-scrollbar {
   display: none;
 }
@@ -806,6 +846,10 @@ nav {
   overflow-x: auto;
   padding-bottom: 4px;
   scrollbar-width: none;
+}
+
+.brands-scroll:focus {
+  outline: none;
 }
 
 .brands-scroll::-webkit-scrollbar {
@@ -1426,6 +1470,10 @@ footer {
   animation: dropdownFade 0.2s ease;
 }
 
+.search-dropdown:focus {
+  outline: none;
+}
+
 @keyframes dropdownFade {
   from {
     opacity: 0;
@@ -1754,7 +1802,7 @@ footer {
   align-items: center;
   gap: 24px;
   padding: 0 6vw;
-  height: 66px;
+  height: var(--nav-height);
 }
 
 .search-bar-wrapper {

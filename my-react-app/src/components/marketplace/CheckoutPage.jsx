@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { API_BASE } from "../../config/api";
 
 // 🚀 UTILITY: Inject and await the Razorpay SDK dynamically before construction
 const loadRazorpayScript = () => {
@@ -30,7 +31,7 @@ export default function CheckoutPage({
     if (!currentUser?.id) return;
     const fetchDatabaseCart = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/cart/${currentUser.id}`);
+        const res = await fetch(`${API_BASE}/api/cart/${currentUser.id}`);
         if (res.ok) {
           const data = await res.json();
           setDbCartItems(data);
@@ -222,7 +223,7 @@ function CheckoutForm({
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/orders/checkout", {
+      const response = await fetch(`${API_BASE}/api/orders/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderPayload),
@@ -244,7 +245,7 @@ function CheckoutForm({
         handler: async function (paymentResponse) {
           try {
             setLoading(true);
-            const verifyResponse = await fetch("http://localhost:5000/api/orders/verify", {
+            const verifyResponse = await fetch(`${API_BASE}/api/orders/verify`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

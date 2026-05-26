@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from "../../config/api";
 import '/src/styles/CustomerTickets.css'; // Styling file matching your design token patterns
 
 export default function CustomerTickets() {
@@ -14,7 +15,7 @@ export default function CustomerTickets() {
         setLoading(true);
         const token = localStorage.getItem('nalapaka_user_token');
         
-        const res = await fetch('http://localhost:5000/api/users/support', {
+        const res = await fetch(`${API_BASE}/api/users/support`, {
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',
             'Content-Type': 'application/json'

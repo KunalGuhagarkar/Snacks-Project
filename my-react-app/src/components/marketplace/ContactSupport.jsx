@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API_BASE } from "../../config/api";
 import "/src/styles/ContactSupport.css";
 
 export default function ContactSupport({
@@ -21,7 +22,7 @@ export default function ContactSupport({
     if (!currentUser?.id) return;
 
     setLoadingHistory(true);
-    fetch(`http://localhost:5000/api/users/support?userId=${currentUser.id}`)
+    fetch(`${API_BASE}/api/users/support?userId=${currentUser.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Synchronization down.");
         return res.json();
@@ -70,7 +71,7 @@ export default function ContactSupport({
 
     setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/support", {
+      const response = await fetch(`${API_BASE}/api/support`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

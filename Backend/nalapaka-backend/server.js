@@ -21,8 +21,61 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // MIDDLEWARE 
-app.use(cors());
+// Configure CORS origins via env `CORS_ORIGINS` (comma-separated).
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+  : ["http://localhost:5173", "http://localhost:5174"];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS policy: Origin not allowed"));
+    }
+  },
+  optionsSuccessStatus: 200,
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json()); // Parses incoming standard JSON application payloads
+
+// Lightweight in-memory rate limiter for auth endpoints (per-IP, per-path)
+const authRateStore = new Map();
+function authRateLimiter(req, res, next) {
+  try {
+    const path = req.path || req.originalUrl || '';
+    if (!path.startsWith('/api/auth')) return next();
+
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const key = `${ip}:${path}`;
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const limit = (path === '/api/auth/login' || path === '/api/auth/register') ? 10 : 60;
+
+    const entry = authRateStore.get(key) || { count: 0, start: now };
+    if (now - entry.start > windowMs) {
+      entry.count = 1;
+      entry.start = now;
+    } else {
+      entry.count += 1;
+    }
+    authRateStore.set(key, entry);
+
+    if (entry.count > limit) {
+      return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    }
+    next();
+  } catch (err) {
+    // On any failure, allow the request to proceed rather than block legitimate traffic
+    next();
+  }
+}
+app.use(authRateLimiter);
 
 // =========================================================================
 // 💳 1. SECURE RAZORPAY INTENT CHECKOUT ENGINE (PERFECT SCHEMA ALIGNMENT)
@@ -55,8 +108,17 @@ app.post("/api/orders/checkout", async (req, res, next) => {
 
     console.log(`🛒 Razorpay Order Setup - Subtotal: ₹${subtotal}, Delivery: ₹${deliveryCharges}, Grand Total: ₹${grandTotalINR}`);
 
-    // Begin unified atomic transaction block
-    if (!isPool && typeof client.query === "function") {
+    // Acquire a dedicated client for transactional operations when available
+    if (db && typeof db.connect === "function") {
+      client = await db.connect();
+      isPool = false; // we have a dedicated client
+    } else {
+      client = db; // fall back to the pool-like object
+      isPool = true;
+    }
+
+    // Begin unified atomic transaction block when using a dedicated client
+    if (!isPool && client && typeof client.query === "function") {
       await client.query("BEGIN");
     }
 

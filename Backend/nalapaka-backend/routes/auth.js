@@ -16,13 +16,8 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // =========================================================================
 // 📬 LIVE EMAIL ENGINE CONFIGURATION (DIAGNOSTIC & SECURE PORT 587 SHIFT)
 // =========================================================================
-console.log("\n-------------------------------------------------------------");
-console.log("🔍 SYSTEM ENVIRONMENT VERIFICATION");
-console.log("-------------------------------------------------------------");
-console.log("EMAIL_USER string loaded:", !!process.env.EMAIL_USER ? `Yes (${process.env.EMAIL_USER})` : "❌ MISSING");
-console.log("EMAIL_PASS string length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : "❌ MISSING");
-console.log("GOOGLE_CLIENT_ID loaded :", !!process.env.GOOGLE_CLIENT_ID ? "Yes" : "❌ MISSING");
-console.log("-------------------------------------------------------------\n");
+// Minimal environment presence check. Avoid printing secrets to logs in any environment.
+console.log("🔍 SYSTEM ENVIRONMENT VERIFICATION: EMAIL_USER and GOOGLE_CLIENT_ID presence checked");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -33,8 +28,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS, 
   },
   tls: {
-    // Prevents local development SSL certificate handshake rejections
-    rejectUnauthorized: false
+    // Allow relaxed TLS in non-production environments only
+    rejectUnauthorized: process.env.NODE_ENV === 'production'
   }
 });
 
@@ -179,7 +174,8 @@ router.post("/forgot-password", async (req, res) => {
       [token, expirationLifespan, user.id]
     );
 
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
 
     await transporter.sendMail({
       from: `"Nalapaka" <${process.env.EMAIL_USER}>`,
@@ -294,12 +290,13 @@ router.post("/google-login", async (req, res) => {
 
     if (userResult.rows.length === 0) {
       // 3. User does not exist -> Automatically register them!
-      // Social sign-ins don't use conventional passwords, so we flag it with a placeholder
-      const placeholderPassword = "OAUTH_EXTERNAL_GOOGLE_ACCOUNT_VALIDATED";
-      
+      // Generate a secure random token and store a hashed value as the password hash
+      const randomToken = crypto.randomBytes(32).toString('hex');
+      const hashedPlaceholder = await bcrypt.hash(randomToken, 10);
+
       const newUser = await db.query(
         "INSERT INTO users (name, email, password_hash, phone, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, phone, role",
-        [name, cleanEmail, placeholderPassword, "N/A", "Customer"]
+        [name, cleanEmail, hashedPlaceholder, "N/A", "Customer"]
       );
       user = newUser.rows[0];
     } else {

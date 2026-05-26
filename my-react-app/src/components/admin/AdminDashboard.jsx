@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../../config/api";
 import "./AdminDashboard.css";
 
 export default function AdminDashboard({ currentUser, setCurrentUser }) {
@@ -51,10 +52,9 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     const token =
       localStorage.getItem("nalapaka_admin_token") ||
       localStorage.getItem("nalapaka_user_token");
-    return {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-    };
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
   }, []);
 
   // Generic State Change Input Controller
@@ -66,7 +66,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
   // 📥 Async Data Fetching Handlers
   const fetchProducts = useCallback(async () => {
     try {
-      const productsRes = await fetch("http://localhost:5000/api/products");
+      const productsRes = await fetch(`${API_BASE}/api/products`);
       if (productsRes.ok) {
         const data = await productsRes.json();
         setProducts(data);
@@ -79,7 +79,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
   const fetchTickets = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
-      const res = await fetch("http://localhost:5000/api/admin/support", {
+      const res = await fetch(`${API_BASE}/api/admin/support`, {
         headers,
       });
       if (res.ok) {
@@ -101,6 +101,70 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     }
   }, [getAuthHeaders]);
 
+  const lastActiveElementRef = useRef(null);
+
+  // Manage modal focus trapping and restore focus on close
+  useEffect(() => {
+    if (!showModal) {
+      // restore focus to last active element when modal closes
+      try {
+        if (lastActiveElementRef.current && typeof lastActiveElementRef.current.focus === 'function') {
+          lastActiveElementRef.current.focus();
+        }
+      } catch (err) {
+        console.debug('Modal focus restore failed', err);
+      }
+      return;
+    }
+
+    const modal = document.querySelector('.ap-modal-window-card');
+    if (!modal) return;
+
+    const focusableSelectors = 'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])';
+    const focusable = Array.from(modal.querySelectorAll(focusableSelectors)).filter(el => !el.hasAttribute('disabled'));
+    const firstFocusable = focusable[0];
+    const lastFocusable = focusable[focusable.length - 1];
+
+    if (firstFocusable && typeof firstFocusable.focus === 'function') firstFocusable.focus();
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setShowModal(false);
+      } else if (e.key === 'Tab') {
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey) {
+          if (document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable.focus();
+          }
+        } else {
+          if (document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable.focus();
+          }
+        }
+      }
+    }
+
+    modal.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      modal.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      try {
+        if (lastActiveElementRef.current && typeof lastActiveElementRef.current.focus === 'function') {
+          lastActiveElementRef.current.focus();
+        }
+      } catch (err) {
+        console.debug('Modal cleanup focus restore failed', err);
+      }
+    };
+  }, [showModal]);
+
   // Master Dashboard Core Lifecycle
   useEffect(() => {
     const fetchCoreDashboardData = async () => {
@@ -116,13 +180,12 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           return;
         }
 
-        // Parallel processing execution grid
+        // Fetch core stats and orders in parallel, then load products & tickets
         const [statsRes, ordersRes] = await Promise.all([
-          fetch("http://localhost:5000/api/admin/stats", { headers }),
-          fetch("http://localhost:5000/api/admin/orders", { headers }),
-          fetchProducts(),
-          fetchTickets(),
+          fetch(`${API_BASE}/api/admin/stats`, { headers }),
+            fetch(`${API_BASE}/api/admin/orders`, { headers }),
         ]);
+        await Promise.all([fetchProducts(), fetchTickets()]);
 
         if (!statsRes.ok)
           throw new Error(`Server Analytics Synch Drop: ${statsRes.status}`);
@@ -179,7 +242,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         .join(" ");
 
       const res = await fetch(
-        `http://localhost:5000/api/admin/orders/${orderId}/status`,
+        `${API_BASE}/api/admin/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: getAuthHeaders(),
@@ -195,14 +258,14 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
       setOrders((prevOrders) =>
         prevOrders.map((o) =>
-          o.id === orderId
+          (o.id === orderId || o._id === orderId)
             ? { ...o, order_status: formattedStatus, status: formattedStatus }
             : o,
         ),
       );
 
       setSelectedOrder((prev) =>
-        prev && prev.id === orderId
+        prev && (prev.id === orderId || prev._id === orderId)
           ? { ...prev, status: formattedStatus, order_status: formattedStatus }
           : prev,
       );
@@ -229,7 +292,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
       }
 
       const res = await fetch(
-        `http://localhost:5000/api/admin/support/${ticketId}/status`,
+        `${API_BASE}/api/admin/support/${ticketId}/status`,
         {
           method: "PUT",
           headers: getAuthHeaders(),
@@ -245,12 +308,12 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
       setTickets((prevTickets) =>
         prevTickets.map((t) =>
-          t.id === ticketId ? { ...t, status: formattedStatus } : t,
+          (t.id === ticketId || t._id === ticketId) ? { ...t, status: formattedStatus } : t,
         ),
       );
 
       setSelectedTicket((prev) =>
-        prev && prev.id === ticketId
+        prev && (prev.id === ticketId || prev._id === ticketId)
           ? { ...prev, status: formattedStatus }
           : prev,
       );
@@ -261,6 +324,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
   // Modal Configuration Openers
   const openCreateModal = () => {
+    lastActiveElementRef.current = document.activeElement;
     setIsEditing(false);
     setCurrentProductId(null);
     setProductForm({
@@ -278,8 +342,9 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
   };
 
   const openEditModal = (product) => {
+    lastActiveElementRef.current = document.activeElement;
     setIsEditing(true);
-    setCurrentProductId(product.id);
+    setCurrentProductId(product.id || product._id);
     setProductForm({
       name: product.name || "",
       brand: product.brand || "Nalapaka",
@@ -298,13 +363,20 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     e.preventDefault();
     try {
       const endpoint = isEditing
-        ? `http://localhost:5000/api/admin/products/${currentProductId}`
-        : "http://localhost:5000/api/admin/products";
+        ? `${API_BASE}/api/admin/products/${currentProductId}`
+        : `${API_BASE}/api/admin/products`;
+
+      // Ensure numeric fields are typed correctly before sending to API
+      const payload = {
+        ...productForm,
+        price: parseFloat(productForm.price) || 0,
+        stock_quantity: parseInt(productForm.stock_quantity, 10) || 0,
+      };
 
       const res = await fetch(endpoint, {
         method: isEditing ? "PUT" : "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(productForm),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -333,7 +405,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     if (!window.confirm(`Permanently remove item: "${name}"?`)) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/products/${id}`,
+        `${API_BASE}/api/admin/products/${id}`,
         {
           method: "DELETE",
           headers: getAuthHeaders(),
@@ -425,7 +497,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         </div>
       </header>
 
-      <main className="ap-workspace-container">
+      <main className="ap-workspace-container" aria-hidden={showModal}>
         {error && (
           <div className="ap-alert-danger" role="alert">
             🛑 Dashboard Exception Trace: {error}
@@ -1036,9 +1108,9 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
       {/* 📥 INVENTORY MANAGEMENT MODAL LAYER (The missing link fixing your SKU UI window) */}
       {showModal && (
         <div className="ap-modal-backdrop-shroud">
-          <div className="ap-modal-window-card">
+          <div className="ap-modal-window-card" role="dialog" aria-modal="true" aria-labelledby="ap-modal-title">
             <div className="ap-modal-header">
-              <h3>
+              <h3 id="ap-modal-title">
                 {isEditing
                   ? `📝 Modify SKU System Configuration: #${currentProductId}`
                   : "＋ Introduce New Product Entry"}

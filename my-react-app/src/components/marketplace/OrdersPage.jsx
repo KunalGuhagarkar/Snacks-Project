@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../../config/api";
 
 export default function OrdersPage({ currentUser }) {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function OrdersPage({ currentUser }) {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:5000/api/orders/history/${currentUser.id}`,
+          `${API_BASE}/api/orders/history/${currentUser.id}`,
         );
         const data = await response.json();
 

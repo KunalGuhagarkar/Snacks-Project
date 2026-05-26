@@ -702,6 +702,7 @@
   color: var(--stone, #64748b);
   margin: 0 0 12px 0;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -1025,7 +1026,6 @@
 
 /* Maps the JSX modal headers & input grids directly onto the structural CSS rules */
 .ap-modal-header {
-  @extend .ap-modal-window-header; /* Fallback mapping fallback if using preprocessors */
   padding: 20px 28px;
   background-color: var(--cream, #fcfaf6);
   border-bottom: 1px solid var(--border, rgba(28, 20, 9, 0.08));

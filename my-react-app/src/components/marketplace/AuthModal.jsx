@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../../config/api";
 import { GoogleLogin } from "@react-oauth/google";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -36,7 +37,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setSuccessMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/google-login", {
+      const response = await fetch(`${API_BASE}/api/auth/google-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken: credentialResponse.credential }),
@@ -74,7 +75,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         return;
       }
       try {
-        const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+        const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: formData.email }),
@@ -108,7 +109,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/auth/${targetEndpoint}`,
+        `${API_BASE}/api/auth/${targetEndpoint}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

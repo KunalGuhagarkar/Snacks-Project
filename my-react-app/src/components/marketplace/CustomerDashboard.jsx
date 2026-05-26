@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { API_BASE } from "../../config/api";
 import "../../styles/CustomerDashboard.css";
 
 export default function CustomerDashboard({ currentUser }) {
@@ -21,7 +22,7 @@ export default function CustomerDashboard({ currentUser }) {
     if (location.state?.targetOrderId) {
       const fetchSpecificOrder = async () => {
         try {
-          const res = await fetch(`http://localhost:5000/api/orders/details/${location.state.targetOrderId}`);
+          const res = await fetch(`${API_BASE}/api/orders/details/${location.state.targetOrderId}`);
           const data = await res.json();
           if (res.ok) {
             setSelectedTrackedOrder(data);
