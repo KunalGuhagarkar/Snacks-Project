@@ -5,10 +5,7 @@ export default function OrdersPage({ currentUser }) {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [selectedOrderItems, setSelectedOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // ==========================================
   // FETCH ALL ORDERS (WITH MOUNT CLEANUP)
@@ -52,32 +49,16 @@ export default function OrdersPage({ currentUser }) {
   }, [currentUser]);
 
   // ==========================================
-  // FETCH ORDER ITEMS (WITH ASYNC GUARDS)
+  // ROUTING HANDLER FOR CUSTOMER DASHBOARD
   // ==========================================
-  const handleViewOrder = async (orderId) => {
-    setSelectedOrderId(orderId); // Set active highlight instantly
-    setLoadingDetails(true);
-    setSelectedOrderItems([]);
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/orders/items/${orderId}`,
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to load order items");
-      }
-
-      // 🛡️ Guard: Only update state if the user is still looking at the same order
-      if (selectedOrderId === orderId || document.getElementById(`order-card-${orderId}`)) {
-        setSelectedOrderItems(data);
-      }
-    } catch (err) {
-      console.error("Order details error:", err);
-    } finally {
-      setLoadingDetails(false);
-    }
+  const handleViewOrderDetails = (orderId) => {
+    // Navigate straight to the dashboard and instruct it to view this order
+    navigate("/dashboard", {
+      state: {
+        targetOrderId: orderId,
+        activeTab: "orders", 
+      },
+    });
   };
 
   // ==========================================
@@ -123,7 +104,7 @@ export default function OrdersPage({ currentUser }) {
           </button>
         </div>
 
-        {/* LOADING TRACK */}
+        {/* LOADING & DISPLAY STATES */}
         {loading ? (
           <div className="orders-empty-card">
             <h2>Loading orders...</h2>
@@ -137,82 +118,38 @@ export default function OrdersPage({ currentUser }) {
             </button>
           </div>
         ) : (
-          <div className="orders-split-grid">
-            
-            {/* MASTER: ORDERS CARDS STACK */}
-            <div className="orders-list-stack">
-              {orders.map((order) => {
-                const isSelected = selectedOrderId === order.id;
-                return (
-                  <div
-                    key={`order-uid-${order.id}`}
-                    id={`order-card-${order.id}`}
-                    className={`order-summary-card ${isSelected ? "active-highlight" : ""}`}
-                  >
-                    <div className="order-card-row-top">
-                      <div>
-                        <h3>Order #{order.id}</h3>
-                        <p className="order-timestamp">{formatDate(order.created_at)}</p>
-                      </div>
-                      <span className={`status-badge tag-${order.order_status?.toLowerCase() || 'pending'}`}>
-                        {order.order_status || 'Processing'}
-                      </span>
-                    </div>
-
-                    <p className="order-grand-sum">
-                      <strong>💰 Total:</strong> ₹{order.grand_total}
-                    </p>
-
-                    <button
-                      type="button"
-                      className={`btn-details-trigger ${isSelected ? "active-viewing" : ""}`}
-                      onClick={() => handleViewOrder(order.id)}
-                    >
-                      {isSelected ? "Viewing Details" : "View Details"}
-                    </button>
+          <div className="orders-list-stack-centric">
+            {orders.map((order) => (
+              <div
+                key={`order-uid-${order.id}`}
+                id={`order-card-${order.id}`}
+                className="order-summary-card"
+              >
+                <div className="order-card-row-top">
+                  <div>
+                    <h3>Order #{order.id}</h3>
+                    <p className="order-timestamp">{formatDate(order.created_at)}</p>
                   </div>
-                );
-              })}
-            </div>
+                  <span className={`status-badge tag-${order.order_status?.toLowerCase().replace(/\s+/g, '-') || 'pending'}`}>
+                    {order.order_status || 'Processing'}
+                  </span>
+                </div>
 
-            {/* DETAIL: STICKY RECEIPT COMPONENT */}
-            <div className="order-sticky-receipt-panel">
-              <h2>🧾 Order Details</h2>
-
-              {loadingDetails ? (
-                <p className="receipt-placeholder-text">🔄 Fetching item breakdown...</p>
-              ) : selectedOrderItems.length === 0 ? (
-                <p className="receipt-placeholder-text">
-                  Select an order card on the left to see full line item breakdowns.
-                </p>
-              ) : (
-                <>
-                  <p className="receipt-active-meta">
-                    Viewing items for <strong>Order #{selectedOrderId}</strong>
+                <div className="order-card-row-bottom-split">
+                  <p className="order-grand-sum">
+                    <strong>💰 Total Amount:</strong> ₹{order.grand_total}
                   </p>
-                  
-                  <div className="receipt-items-scrolltrack">
-                    {selectedOrderItems.map((item, index) => (
-                      <div
-                        key={`lineitem-${item.id || index}-${selectedOrderId}`}
-                        className="receipt-line-item"
-                      >
-                        <div>
-                          <span className="line-item-title">{item.historical_name}</span>
-                          <span className="line-item-pricing">
-                            ₹{item.historical_price} × {item.quantity}
-                          </span>
-                        </div>
-                        <strong className="line-item-subtotal">
-                          ₹{item.historical_price * item.quantity}
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
 
+                  <button
+                    type="button"
+                    className="btn-details-trigger"
+                    onClick={() => handleViewOrderDetails(order.id)}
+                  >
+                    View Details in Dashboard &rarr;
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

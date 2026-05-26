@@ -1,11 +1,10 @@
-// backend/routes/orders.js
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
 
-// ==========================================
-// GET USER ORDER HISTORY
-// ==========================================
+// =========================================================================
+// 🗄️ GET USER ORDER HISTORY
+// =========================================================================
 router.get("/history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -20,16 +19,16 @@ router.get("/history/:userId", async (req, res) => {
   }
 });
 
-// ==========================================
-// GET SINGLE ORDER ITEMS
-// ==========================================
+// =========================================================================
+// 🛒 GET SINGLE ORDER ITEMS
+// =========================================================================
 router.get("/items/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
     const result = await db.query(
       `SELECT id, product_id, historical_name, historical_price, quantity 
        FROM order_items WHERE order_id = $1 ORDER BY id ASC`,
-      [orderId]
+       [orderId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -38,9 +37,9 @@ router.get("/items/:orderId", async (req, res) => {
   }
 });
 
-// ==========================================
-// CHECKOUT WITH TRANSACTION SAFETY & STOCK CEILING GUARDS
-// ==========================================
+// =========================================================================
+// 💳 CHECKOUT WITH TRANSACTION SAFETY & STOCK CEILING GUARDS
+// =========================================================================
 router.post("/checkout", async (req, res) => {
   const { userId, addressDetails, cartItems } = req.body;
 
@@ -109,12 +108,12 @@ router.post("/checkout", async (req, res) => {
     
     const addressId = addressResult.rows[0].id;
 
-    // 5. WRITE MASTER ORDER ROW ENTRY
+    // 5. WRITE MASTER ORDER ROW ENTRY (Defaults status to 'Pending')
     const order = await client.query(
       `
       INSERT INTO orders
       (user_id, address_id, total_items_price, delivery_charge, grand_total, order_status, status)
-      VALUES ($1, $2, $3, $4, $5, 'Processing', 'Pending')
+      VALUES ($1, $2, $3, $4, $5, 'Pending', 'Pending')
       RETURNING id
       `,
       [userId, addressId, subtotal, delivery, total]
@@ -183,6 +182,104 @@ router.post("/checkout", async (req, res) => {
     res.status(400).json({ success: false, error: err.message || "Checkout engine execution failure" });
   } finally {
     client.release();
+  }
+});
+
+// =========================================================================
+// 📦 LIVE TRACKING MILESTONE DETAILS DEEP VIEW FETCH ENGINE
+// =========================================================================
+router.get("/details/:id", async (req, res) => {
+  try {
+    const orderId = req.params.id;
+
+    // 1. Pull core layout info from your main order schema
+    const orderQuery = `
+      SELECT id, order_status, grand_total, created_at 
+      FROM orders 
+      WHERE id = $1
+    `;
+    const orderResult = await db.query(orderQuery, [orderId]);
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "No matching order record found." });
+    }
+
+    const orderData = orderResult.rows[0];
+
+    // 2. Aggregate individual ordered items mapped to historical pricing
+    const itemsQuery = `
+      SELECT id, historical_name, historical_price, quantity 
+      FROM order_items 
+      WHERE order_id = $1
+      ORDER BY id ASC
+    `;
+    const itemsResult = await db.query(itemsQuery, [orderId]);
+
+    // 3. Assemble full package payload directly into dashboard interface hooks
+    const responsePayload = {
+      id: orderData.id,
+      order_status: orderData.order_status || "Pending",
+      grand_total: orderData.grand_total,
+      created_at: orderData.created_at,
+      items: itemsResult.rows
+    };
+
+    return res.status(200).json(responsePayload);
+
+  } catch (error) {
+    console.error("Deep-view lifecycle milestone query failed:", error);
+    return res.status(500).json({ error: "Internal order tracking engine lookup exception." });
+  }
+});
+
+// =========================================================================
+// ⚙️ PUT /status/:id - UPDATE ORDER STAGE (ADMIN / SYSTEM WORKFLOW)
+// =========================================================================
+router.put("/status/:id", async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { orderStatus } = req.body;
+
+    if (!orderStatus) {
+      return res.status(400).json({ error: "Missing required orderStatus parameter in payload request body." });
+    }
+
+    // Explicit validation matching your exact 7 lifecycle stages
+    const VALID_STAGES = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"];
+    
+    // Normalize casing and string lookups safely
+    const matchedStage = VALID_STAGES.find(
+      stage => stage.toLowerCase().trim() === orderStatus.toLowerCase().trim()
+    );
+
+    if (!matchedStage) {
+      return res.status(400).json({ 
+        error: `Invalid stage designation: "${orderStatus}". Status must strictly match one of: ${VALID_STAGES.join(", ")}` 
+      });
+    }
+
+    // Update both structural tracking status variants in your table records
+    const updateQuery = `
+      UPDATE orders 
+      SET order_status = $1, status = $1 
+      WHERE id = $2 
+      RETURNING id, order_status
+    `;
+    const result = await db.query(updateQuery, [matchedStage, orderId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No active order record targets matched this reference index ID." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Order status advanced to ${matchedStage} successfully.`,
+      updatedOrder: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Failed to alter system milestone tracking matrix state:", error);
+    return res.status(500).json({ error: "Internal order state execution pipeline error." });
   }
 });
 

@@ -9,6 +9,9 @@ import AdminLogin from "./components/admin/AdminLogin";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import ResetPassword from "./components/marketplace/ResetPassword"; // 👈 Import your new recovery view component
 
+// 📦 NEW ADDITION: Customer Dashboard View for Lifecycle Status Tracking
+import CustomerDashboard from "./components/marketplace/CustomerDashboard"; 
+
 function App() {
   // ==========================================================================
   // 💾 GLOBAL STATE INITIALIZATION
@@ -37,7 +40,7 @@ function App() {
 
   return (
     <Routes>
-      {/* 🛒 PUBLIC MARKETPLACE ROUTE */}
+      /* 🛒 PUBLIC MARKETPLACE ROUTE */
       <Route
         path="/"
         element = {
@@ -50,10 +53,10 @@ function App() {
         }
       />
 
-      {/* 🔑 STANDALONE PASSWORD RESET LANDING GATEWAY */}
+      /* 🔑 STANDALONE PASSWORD RESET LANDING GATEWAY */
       <Route path="/reset-password" element={<ResetPassword />} /> {/* 👈 Added public fallback hook */}
 
-      {/* 📦 USER ORDER HISTORY ROUTE */}
+      /* 📦 USER ORDER HISTORY ROUTE */
       <Route
         path="/orders"
         element = {
@@ -65,7 +68,19 @@ function App() {
         }
       />
 
-      {/* 💳 CHECKOUT FLOW ROUTE */}
+      /* 📊 NEW ADDITION: PROTECTED CUSTOMER DASHBOARD & LIVE STATUS TRACKER */
+      <Route
+        path="/dashboard"
+        element = {
+          currentUser ? (
+            <CustomerDashboard currentUser={currentUser} />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+
+      /* 💳 CHECKOUT FLOW ROUTE */
       <Route
         path="/checkout"
         element = {
@@ -77,7 +92,7 @@ function App() {
         }
       />
 
-      {/* 🛡️ ADMIN LOGIN INTERFACE */}
+      /* 🛡️ ADMIN LOGIN INTERFACE */
       <Route
         path="/admin/login"
         element = {
@@ -89,7 +104,7 @@ function App() {
         }
       />
 
-      {/* 📊 PROTECTED ADMINISTRATIVE DASHBOARD ROUTE */}
+      /* 📊 PROTECTED ADMINISTRATIVE DASHBOARD ROUTE */
       <Route
         path="/admin/dashboard"
         element = {
@@ -101,7 +116,7 @@ function App() {
         }
       />
 
-      {/* 🔄 FALLBACK WILDCARD ROUTE */}
+      /* 🔄 FALLBACK WILDCARD ROUTE */
       <Route path="*" replace element={<Navigate to="/" />} />
     </Routes>
   );

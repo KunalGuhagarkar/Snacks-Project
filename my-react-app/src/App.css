@@ -2060,3 +2060,339 @@ footer {
     font-size: 1.65rem;
   }
 }
+
+
+/* ==========================================================================
+   ORDERSPAGE - NALAPAKA ECOSYSTEM APPENDIX STYLES
+   ========================================================================== */
+
+/* 1. Core Layout Structure & Boundaries */
+.orders-page-wrapper {
+  background-color: #fcf9f5;
+  min-height: calc(100vh - 70px);
+  padding: 40px 20px;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #2d251e;
+  display: flex;
+  justify-content: center;
+}
+
+.orders-page-wrapper .orders-max-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* 2. Page Header Control Bar */
+.orders-page-wrapper .orders-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed #ede4dc;
+  padding-bottom: 20px;
+}
+
+.orders-page-wrapper .orders-page-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+  color: #4a3b32;
+  font-weight: 700;
+}
+
+.orders-page-wrapper .orders-page-header p {
+  margin: 0;
+  color: #8c7b70;
+  font-size: 15px;
+}
+
+.orders-page-wrapper .btn-back-home {
+  background-color: transparent;
+  color: #615045;
+  border: 1px solid #ede4dc;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orders-page-wrapper .btn-back-home:hover {
+  background-color: #faf6f2;
+  color: #ff9f43;
+  border-color: #ff9f43;
+}
+
+/* 3. Master-Detail Responsive Grids */
+.orders-page-wrapper .orders-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 30px;
+  align-items: start;
+}
+
+@media (max-width: 968px) {
+  .orders-page-wrapper .orders-split-grid {
+    grid-template-columns: 1fr;
+  }
+  .orders-page-wrapper .order-sticky-receipt-panel {
+    position: static !important;
+  }
+}
+
+/* 4. Left Master Panel: Order Lists Cards */
+.orders-page-wrapper .orders-list-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.orders-page-wrapper .order-summary-card {
+  background-color: #ffffff;
+  border: 1px solid #ede4dc;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(74, 59, 50, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.orders-page-wrapper .order-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(74, 59, 50, 0.05);
+  border-color: #ebdcd0;
+}
+
+.orders-page-wrapper .active-highlight {
+  border-color: #ff9f43 !important;
+  background-color: #fffbf7;
+  box-shadow: 0 4px 15px rgba(255, 159, 67, 0.08) !important;
+}
+
+.orders-page-wrapper .order-card-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.orders-page-wrapper .order-summary-card h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: #4a3b32;
+}
+
+.orders-page-wrapper .order-timestamp {
+  margin: 0;
+  font-size: 13px;
+  color: #a18e83;
+}
+
+.orders-page-wrapper .order-grand-sum {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: #615045;
+}
+
+.orders-page-wrapper .order-grand-sum strong {
+  color: #2d251e;
+}
+
+.orders-page-wrapper .btn-details-trigger {
+  width: 100%;
+  background-color: #faf6f2;
+  color: #615045;
+  border: 1px solid #ede4dc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orders-page-wrapper .btn-details-trigger:hover {
+  background-color: #ff9f43;
+  color: #ffffff;
+  border-color: #ff9f43;
+}
+
+.orders-page-wrapper .active-viewing {
+  background-color: #4a3b32 !important;
+  color: #ffffff !important;
+  border-color: #4a3b32 !important;
+}
+
+/* 5. Logistics Status Badges Layouts */
+.orders-page-wrapper .status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.orders-page-wrapper .tag-pending { background-color: #fef3c7; color: #d97706; }
+.orders-page-wrapper .tag-confirmed { background-color: #e0f2fe; color: #0369a1; }
+.orders-page-wrapper .tag-processing { background-color: #e0e7ff; color: #4338ca; }
+.orders-page-wrapper .tag-kitchen-preparing { background-color: #ebdffc; color: #6d28d9; }
+.orders-page-wrapper .tag-shipped { background-color: #fef3c7; color: #d97706; }
+.orders-page-wrapper .tag-dispatched { background-color: #fff7ed; color: #ea580c; }
+.orders-page-wrapper .tag-delivered { background-color: #dcfce7; color: #15803d; }
+.orders-page-wrapper .tag-out-for-delivery { background-color: #e0f8ea; color: #16a34a; }
+.orders-page-wrapper .tag-cancelled { background-color: #fee2e2; color: #b91c1c; }
+
+/* 6. Right Detail Panel: Sticky Breakdowns Receipt */
+.orders-page-wrapper .order-sticky-receipt-panel {
+  position: sticky;
+  top: 30px;
+  background-color: #ffffff;
+  border: 1px solid #ede4dc;
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: 0 10px 30px rgba(74, 59, 50, 0.03);
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-page-wrapper .order-sticky-receipt-panel h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: #4a3b32;
+  border-bottom: 2px solid #fcf9f5;
+  padding-bottom: 12px;
+}
+
+.orders-page-wrapper .receipt-active-meta {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: #615045;
+  background-color: #faf6f2;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.orders-page-wrapper .receipt-placeholder-text {
+  margin: 40px 0;
+  text-align: center;
+  color: #a18e83;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.orders-page-wrapper .receipt-items-scrolltrack {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+/* Custom mini scrollbar trackers for receipt items area */
+.orders-page-wrapper .receipt-items-scrolltrack::-webkit-scrollbar {
+  width: 5px;
+}
+.orders-page-wrapper .receipt-items-scrolltrack::-webkit-scrollbar-track {
+  background: #fcf9f5;
+  border-radius: 10px;
+}
+.orders-page-wrapper .receipt-items-scrolltrack::-webkit-scrollbar-thumb {
+  background: #ebdcd0;
+  border-radius: 10px;
+}
+
+.orders-page-wrapper .receipt-line-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #fdf8f4;
+}
+
+.orders-page-wrapper .receipt-line-item:last-child {
+  border-bottom: none;
+}
+
+.orders-page-wrapper .line-item-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a3b32;
+  margin-bottom: 2px;
+}
+
+.orders-page-wrapper .line-item-pricing {
+  display: block;
+  font-size: 12px;
+  color: #8c7b70;
+}
+
+.orders-page-wrapper .line-item-subtotal {
+  font-size: 15px;
+  color: #2d251e;
+}
+
+/* 7. Exceptional States Containers (Unauthorized, Empty Batch) */
+.orders-unauth-shroud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 70px);
+  background-color: #fcf9f5;
+  padding: 20px;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.orders-unauth-card, 
+.orders-page-wrapper .orders-empty-card {
+  text-align: center;
+  background-color: #ffffff;
+  border: 1px solid #ede4dc;
+  border-radius: 16px;
+  padding: 40px 30px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 10px 25px rgba(74, 59, 50, 0.03);
+}
+
+.orders-unauth-card h2, 
+.orders-page-wrapper .orders-empty-card h2 {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  color: #4a3b32;
+}
+
+.orders-unauth-card p, 
+.orders-page-wrapper .orders-empty-card p {
+  margin: 0 0 24px 0;
+  font-size: 15px;
+  color: #8c7b70;
+  line-height: 1.5;
+}
+
+.orders-unauth-shroud .btn-primary-orange,
+.orders-page-wrapper .btn-primary-orange {
+  background-color: #ff9f43;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 159, 67, 0.2);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.orders-unauth-shroud .btn-primary-orange:hover,
+.orders-page-wrapper .btn-primary-orange:hover {
+  background-color: #e68a2e;
+}
+
+.orders-unauth-shroud .btn-primary-orange:active,
+.orders-page-wrapper .btn-primary-orange:active {
+  transform: scale(0.98);
+}

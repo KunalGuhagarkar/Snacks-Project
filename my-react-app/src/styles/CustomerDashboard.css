@@ -1,0 +1,607 @@
+/* ==========================================================================
+   🧱 GLOBAL DISPOSITION CONTAINER & VARIABLE RESET
+   ========================================================================== */
+:root {
+  --primary-orange: #e67e22;
+  --primary-orange-hover: #d35400;
+  --success-green: #27ae60;
+  --neutral-dark: #2c3e50;
+  --neutral-light: #f8f9fa;
+  --border-color: #e2e8f0;
+  --text-muted: #7f8c8d;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Global Reset Rule for this layout to guarantee padding behaves across elements */
+.cd-dashboard-global-container,
+.cd-dashboard-global-container * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.cd-dashboard-global-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--neutral-dark);
+  background-color: #f4f6f8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   🌐 TOP NAVIGATION BAR INTERFACE
+   ========================================================================== */
+.cd-navbar-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.cd-nav-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: opacity 0.2s;
+}
+
+.cd-nav-brand-group:hover {
+  opacity: 0.85;
+}
+
+.cd-nav-logo-icon {
+  font-size: 1.8rem;
+}
+
+.cd-nav-brand-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--neutral-dark);
+  letter-spacing: -0.5px;
+}
+
+.cd-nav-meta-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.cd-nav-breadcrumb-indicator {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.cd-nav-home-direct-btn {
+  background-color: transparent;
+  border: 1px solid var(--primary-orange);
+  color: var(--primary-orange);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cd-nav-home-direct-btn:hover {
+  background-color: var(--primary-orange);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   🗂️ MAIN SPLIT WORKSPACE LAYOUT & SIDEBAR (CORRECTED BOX MODEL)
+   ========================================================================== */
+.cd-dashboard-workspace-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  gap: 2rem;
+  box-sizing: border-box;
+}
+
+.cd-sidebar-navigation-dock {
+  width: 280px;
+  min-width: 280px;      /* 🔒 Locks horizontal boundary dimensions explicitly */
+  flex-shrink: 0;        /* 🔒 Blocks right-side content panel from compressing the dock */
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  height: fit-content;
+  box-sizing: border-box;
+}
+
+.cd-user-profile-summary-badge {
+  text-align: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cd-avatar-placeholder {
+  width: 55px;
+  height: 55px;
+  background-color: #fff3e0;
+  color: var(--primary-orange);
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem auto;
+  border: 2px solid var(--primary-orange);
+  flex-shrink: 0;
+}
+
+.cd-user-profile-summary-badge h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Prevents long usernames from tearing layout borders */
+}
+
+.cd-user-profile-summary-badge p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cd-sidebar-menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* 🔥 SIDEBAR NAV LINKS (THE "NOT FITTING" RESOLUTION) */
+.cd-tab-anchor-btn {
+  width: 100%;           /* Spans clean edge-to-edge inside the sidebar limits */
+  box-sizing: border-box; /* Forces layout calculations within absolute pixel metrics */
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--neutral-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;   /* Blocks accidental inner text auto wrapping rows */
+  overflow: hidden;
+}
+
+.cd-tab-anchor-btn:hover {
+  background-color: var(--neutral-light);
+  color: var(--primary-orange);
+}
+
+.cd-tab-anchor-btn.active-dock {
+  background-color: #fff3e0;
+  color: var(--primary-orange);
+  font-weight: 600;
+}
+
+.cd-sidebar-footer-info {
+  margin-top: 2.5rem;
+  background-color: var(--neutral-light);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cd-sidebar-footer-info p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-muted);
+}
+
+.cd-sidebar-help-btn {
+  background: none;
+  border: none;
+  color: var(--primary-orange);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   💻 MAIN WORKSPACE CONTENT SLATE
+   ========================================================================== */
+.cd-main-workspace-slate {
+  flex: 1;
+  min-width: 0; /* 🔥 Allows internal layout structures to shrink dynamically without breaking flow */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* CASE B: PROFILE METRICS CARD */
+.cd-profile-editor-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.cd-section-title-header {
+  margin-bottom: 2rem;
+}
+
+.cd-section-title-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.cd-section-title-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.cd-profile-fields-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 500px;
+}
+
+.cd-profile-field-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cd-profile-field-node label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--neutral-dark);
+}
+
+.cd-profile-field-node input {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 0.95rem;
+  cursor: not-allowed;
+}
+
+/* CASE C: EMPTY STATE LOGISTICS BANNER */
+.cd-history-empty-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.cd-empty-state-icon-bubble {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.cd-history-empty-card h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.6rem;
+}
+
+.cd-history-empty-card p {
+  color: var(--text-muted);
+  max-width: 500px;
+  margin: 0 auto 2rem auto;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.cd-action-history-jump {
+  background-color: var(--primary-orange);
+  color: #ffffff;
+  border: none;
+  padding: 0.85rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(230, 126, 34, 0.2);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.cd-action-history-jump:hover {
+  background-color: var(--primary-orange-hover);
+}
+
+.cd-action-history-jump:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   📦 VIEW CASE A: LIVE TIMELINE MILESTONE TRACKER VIEW
+   ========================================================================== */
+.cd-status-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cd-status-header-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cd-status-back-btn {
+  background: none;
+  border: none;
+  color: var(--primary-orange);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: fit-content;
+  padding: 0;
+  text-align: left;
+}
+
+.cd-status-back-btn:hover {
+  text-decoration: underline;
+}
+
+.cd-status-header-strip h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+/* HORIZONTAL TIMELINE MATRIX GRID */
+.cd-tracking-timeline-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 2.5rem 2rem;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto; /* Adds clean horizontal scrolling within the timeline box if viewport goes narrow */
+}
+
+.cd-pipeline-progress-track {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  min-width: 650px;
+}
+
+.cd-timeline-node-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  z-index: 2;
+}
+
+.cd-node-indicator-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 3px solid #cbd5e1;
+  color: #94a3b8;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.cd-node-label-caption {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* CONNECTOR WIRING LINE LAYERS */
+.cd-connecting-pipeline-wire {
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 18px);
+  right: calc(-50% + 18px);
+  height: 4px;
+  background-color: #e2e8f0;
+  z-index: -1;
+  transition: background-color 0.3s ease;
+}
+
+/* STATE-SPECIFIC ENGINE INHERITANCE MODIFIERS */
+.cd-timeline-node-step.node-passed .cd-node-indicator-circle {
+  border-color: var(--success-green);
+  background-color: var(--success-green);
+  color: #ffffff;
+}
+
+.cd-timeline-node-step.node-passed .cd-node-label-caption {
+  color: var(--neutral-dark);
+}
+
+.cd-timeline-node-step.node-passed .cd-connecting-pipeline-wire {
+  background-color: var(--success-green);
+}
+
+/* PULSE ANIMATION TRIGGER FOR IMMEDIATE ACTIVE STAGE */
+.cd-timeline-node-step.node-current-pulse .cd-node-indicator-circle {
+  border-color: var(--primary-orange);
+  background-color: #ffffff;
+  color: var(--primary-orange);
+  box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.2);
+  animation: nodeActivePulse 2s infinite ease-in-out;
+}
+
+.cd-timeline-node-step.node-current-pulse .cd-node-label-caption {
+  color: var(--primary-orange);
+  font-weight: 700;
+}
+
+@keyframes nodeActivePulse {
+  0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(230, 126, 34, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); }
+}
+
+/* CANCELLATION BANNER EXCEPTION MODE */
+.cd-cancelled-banner-alert {
+  background-color: #fef2f2;
+  border: 1px dashed #f87171;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.cd-cancelled-banner-alert h3 {
+  margin: 0 0 0.5rem 0;
+  color: #991b1b;
+}
+
+.cd-cancelled-banner-alert p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f1d1d;
+}
+
+/* INVOICE SUMMARY SLATE CARD */
+.cd-status-receipt-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.cd-status-receipt-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.cd-status-timestamp-meta {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.cd-divider-dashed {
+  border: none;
+  border-top: 1px dashed var(--border-color);
+  margin: 1.25rem 0;
+}
+
+.cd-receipt-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.cd-receipt-status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.cd-receipt-grand-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+}
+
+.cd-receipt-grand-total-row span {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.cd-empty-notice {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   🎬 ANIMATION TRANSITIONS ENGINE
+   ========================================================================== */
+.animated-fade-in {
+  animation: fadeInFrame 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInFrame {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   📱 RESPONSIVE BREAKPOINT CONTROLS
+   ========================================================================== */
+@media (max-width: 992px) {
+  .cd-dashboard-workspace-layout {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+  
+  .cd-sidebar-navigation-dock {
+    width: 100%;
+    min-width: 100%; /* Allows sidebar to scale fluidly to width on tablets/phones */
+  }
+}
+
+@media (max-width: 576px) {
+  .cd-navbar-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .cd-nav-meta-links {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

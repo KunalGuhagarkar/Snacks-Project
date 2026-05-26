@@ -1018,3 +1018,156 @@
     grid-column: span 1;
   }
 }
+
+/* ==========================================================================
+   REACT JX INTEGRATION COMPATIBILITY PATCH (Class Name Mapping)
+   ========================================================================== */
+
+/* Maps the JSX modal headers & input grids directly onto the structural CSS rules */
+.ap-modal-header {
+  @extend .ap-modal-window-header; /* Fallback mapping fallback if using preprocessors */
+  padding: 20px 28px;
+  background-color: var(--cream, #fcfaf6);
+  border-bottom: 1px solid var(--border, rgba(28, 20, 9, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ap-modal-header h3 {
+  margin: 0;
+  font-family: "Fraunces", serif;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.ap-modal-close-x {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+  color: var(--stone, #64748b);
+  transition: color 0.15s ease;
+}
+.ap-modal-close-x:hover { color: var(--ink, #1c1409); }
+
+/* Bridges .form-input-grid from template to .ap-modal-form-grid */
+.form-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Bridges .input-group from template to .ap-form-field-wrapper */
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group.full-width-field {
+  grid-column: span 2;
+}
+
+.input-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--stone, #64748b);
+  margin-bottom: 6px;
+  letter-spacing: 0.03em;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border-med, #cbd5e1);
+  border-radius: 8px;
+  outline: none;
+  background-color: var(--white, #ffffff);
+  transition: border-color 0.15s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+  border-color: var(--saffron, #dc7b2a);
+}
+
+/* Modal form actions bridge classes */
+.ap-modal-actions-footer {
+  margin-top: 24px;
+  border-top: 1px solid rgba(28, 20, 9, 0.08);
+  padding-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.ap-btn-secondary {
+  background: none;
+  border: 1.5px solid var(--border-med, #cbd5e1);
+  color: var(--stone, #64748b);
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ap-btn-secondary:hover {
+  background-color: var(--cream, #fcfaf6);
+  color: var(--ink, #1c1409);
+}
+
+.ap-btn-primary {
+  background-color: var(--saffron, #dc7b2a);
+  color: var(--white, #ffffff);
+  border: none;
+  box-shadow: 0 4px 12px rgba(220, 123, 42, 0.15);
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.ap-btn-primary:hover { background-color: var(--saffron-dark, #c5651b); }
+
+/* CUSTOM SCROLLBAR INTERFACES */
+.ap-pane-table-scroll::-webkit-scrollbar,
+.form-input-grid::-webkit-scrollbar,
+.ap-breakdown-scroll-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ap-pane-table-scroll::-webkit-scrollbar-track,
+.form-input-grid::-webkit-scrollbar-track,
+.ap-breakdown-scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ap-pane-table-scroll::-webkit-scrollbar-thumb,
+.form-input-grid::-webkit-scrollbar-thumb,
+.ap-breakdown-scroll-box::-webkit-scrollbar-thumb {
+  background-color: rgba(28, 20, 9, 0.15);
+  border-radius: 20px;
+}
+
+/* RESPONSIVE LAYOUT FORM CORRECTIONS */
+@media (max-width: 768px) {
+  .form-input-grid {
+    grid-template-columns: 1fr;
+  }
+  .input-group.full-width-field {
+    grid-column: span 1;
+  }
+}
