@@ -36,7 +36,8 @@ export default function AdminLogin({ onAuthSuccess }) {
       }
 
       // 🔐 CRITICAL GATEKEEPER: Prevent regular Customers from entering
-      if (data.user?.role !== "Admin") {
+      // Handled case-insensitive database string variants (e.g., "admin", "Admin")
+      if (data.user?.role?.toLowerCase() !== "admin" && !data.user?.isAdmin) {
         throw new Error("Access Denied: This account lacks master system permissions.");
       }
 
@@ -55,97 +56,52 @@ export default function AdminLogin({ onAuthSuccess }) {
   };
 
   return (
-    <div className="admin-login-wrapper" style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "var(--light-bg, #f9f6f0)",
-      padding: "20px"
-    }}>
-      <div className="admin-login-card" style={{
-        background: "#ffffff",
-        padding: "40px",
-        borderRadius: "16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-        width: "100%",
-        maxWidth: "420px",
-        border: "1px solid rgba(0,0,0,0.05)"
-      }}>
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <span style={{ fontSize: "3rem" }}>🛡️</span>
-          <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "#111", marginTop: "12px", marginBottom: "4px" }}>
-            Admin Terminal
-          </h2>
-          <p style={{ color: "#777", fontSize: "0.9rem" }}>Authorized Personnel Access Point</p>
+    <div className="admin-login-wrapper">
+      <div className="admin-login-card">
+        <div className="admin-login-header">
+          <span className="admin-terminal-badge" aria-hidden="true">🛡️</span>
+          <h2>Admin Terminal</h2>
+          <p>Authorized Personnel Access Point</p>
         </div>
 
         {errorMsg && (
-          <div style={{
-            background: "#fee2e2",
-            color: "#991b1b",
-            padding: "12px 16px",
-            borderRadius: "8px",
-            fontSize: "0.85rem",
-            marginBottom: "20px",
-            fontWeight: "500",
-            border: "1px solid #fca5a5"
-          }}>
+          <div className="admin-error-box" role="alert">
             ⚠️ {errorMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "700", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Secure Email Address
-            </label>
+          <div className="admin-field-group">
+            <label htmlFor="admin-email">Secure Email Address</label>
             <input
+              id="admin-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@nalapaka.com"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid #ddd",
-                fontSize: "1rem"
-              }}
               disabled={loading}
+              autoComplete="email"
+              required
             />
           </div>
 
-          <div style={{ marginBottom: "28px" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "700", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Access Passphrase
-            </label>
+          <div className="admin-field-group">
+            <label htmlFor="admin-password">Access Passphrase</label>
             <input
+              id="admin-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid #ddd",
-                fontSize: "1rem"
-              }}
               disabled={loading}
+              autoComplete="current-password"
+              required
             />
           </div>
 
           <button
             type="submit"
-            className="btn-main"
-            style={{
-              width: "100%",
-              padding: "14px",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              marginBottom: "16px"
-            }}
+            className="btn-main admin-submit-btn"
             disabled={loading}
           >
             {loading ? "🔄 Verifying Identity Matrix..." : "Unlock Console 🔓"}
@@ -154,17 +110,9 @@ export default function AdminLogin({ onAuthSuccess }) {
 
         <button
           onClick={() => navigate("/")}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#666",
-            width: "100%",
-            textAlign: "center",
-            fontSize: "0.9rem",
-            cursor: "pointer",
-            textDecoration: "underline"
-          }}
+          className="admin-back-btn"
           disabled={loading}
+          type="button"
         >
           Return to Marketplace
         </button>

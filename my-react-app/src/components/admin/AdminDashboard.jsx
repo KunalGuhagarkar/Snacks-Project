@@ -87,12 +87,11 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         setTickets(ticketData);
 
         if (ticketData.length > 0) {
-          setSelectedTicket(
-            (prevTicket) =>
-              prevTicket || {
-                ...ticketData[0],
-                status: ticketData[0].status || "Pending",
-              },
+          setSelectedTicket((prevTicket) =>
+            prevTicket || {
+              ...ticketData[0],
+              status: ticketData[0].status || "Pending",
+            },
           );
         }
       }
@@ -101,7 +100,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     }
   }, [getAuthHeaders]);
 
-  // Master Dashboard Core Lifecycle (Optimized Execution Grid)
+  // Master Dashboard Core Lifecycle
   useEffect(() => {
     const fetchCoreDashboardData = async () => {
       try {
@@ -213,13 +212,18 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
   const handleUpdateTicketStatus = async (ticketId, targetStatus) => {
     try {
-      const formattedStatus = targetStatus
-        .trim()
-        .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        )
-        .join(" ");
+      let cleanStatus = targetStatus.trim();
+      let formattedStatus = "";
+
+      // Safe check: If your internal UI treats it as "Closed", swap it to what backend expects ("Spam")
+      if (cleanStatus.toLowerCase() === "closed") {
+        formattedStatus = "Spam";
+      } else if (cleanStatus.toLowerCase() === "in progress") {
+        formattedStatus = "In Progress"; // Explicit exception for correct casing
+      } else {
+        // Enforce basic title casing for standard statuses (Pending, Resolved, Spam)
+        formattedStatus = cleanStatus.charAt(0).toUpperCase() + cleanStatus.slice(1).toLowerCase();
+      }
 
       const res = await fetch(
         `http://localhost:5000/api/admin/support/${ticketId}/status`,
@@ -356,7 +360,8 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
   if (loading) {
     return (
       <div className="ap-loading-shroud">
-        🔄 Syncing Master Operational Control Units...
+        <div className="ap-spinner" aria-hidden="true">🔄</div>
+        <p>Syncing Master Operational Control Units...</p>
       </div>
     );
   }
@@ -366,31 +371,35 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
       {/* BRAND NAVIGATION HEADER */}
       <header className="ap-main-navbar">
         <div className="ap-navbar-container">
-          <span className="ap-brand-logo" onClick={() => setActiveTab("core")}>
+          <button className="ap-brand-logo-btn" onClick={() => setActiveTab("core")} type="button">
             Nalapaka <span className="ap-brand-subtitle">Console Engine</span>
-          </span>
-          <nav className="ap-navbar-actions-group">
+          </button>
+          <nav className="ap-navbar-actions-group" aria-label="Dashboard views">
             <button
               className={`ap-navbar-tab-link ${activeTab === "core" ? "ap-active-tab" : ""}`}
               onClick={() => setActiveTab("core")}
+              type="button"
             >
               🎛️ Matrix Overview
             </button>
             <button
               className={`ap-navbar-tab-link ${activeTab === "orders" ? "ap-active-tab" : ""}`}
               onClick={() => setActiveTab("orders")}
+              type="button"
             >
               📋 Master Orders ({orders.length})
             </button>
             <button
               className={`ap-navbar-tab-link ${activeTab === "catalog" ? "ap-active-tab" : ""}`}
               onClick={() => setActiveTab("catalog")}
+              type="button"
             >
               📦 Inventory Catalog ({products.length})
             </button>
             <button
               className={`ap-navbar-tab-link ${activeTab === "queries" ? "ap-active-tab" : ""}`}
               onClick={() => setActiveTab("queries")}
+              type="button"
             >
               💬 Customer Queries ({tickets.length})
             </button>
@@ -398,6 +407,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           <button
             className="ap-navbar-logout-btn"
             onClick={handleCleanAuthRedirect}
+            type="button"
           >
             Logout Terminal 🚪
           </button>
@@ -406,7 +416,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
       <main className="ap-workspace-container">
         {error && (
-          <div className="ap-alert-danger">
+          <div className="ap-alert-danger" role="alert">
             🛑 Dashboard Exception Trace: {error}
           </div>
         )}
@@ -415,15 +425,16 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         {activeTab === "core" && (
           <>
             <div className="ap-workspace-header">
-              <div>
+              <div className="ap-header-title-block">
                 <h1>Storefront Core Engine Metrics</h1>
-                <p style={{ color: "#64748b", margin: "4px 0 0 0" }}>
+                <p className="ap-header-subtext">
                   Live diagnostic overview metrics capturing public checkout sessions.
                 </p>
               </div>
               <button
                 className="ap-create-new-item-btn"
                 onClick={openCreateModal}
+                type="button"
               >
                 ＋ Add New Inventory SKU
               </button>
@@ -581,13 +592,8 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                           <button
                             key={stage}
                             onClick={() => handleUpdateStatus(selectedOrder.id, stage)}
-                            style={{
-                              backgroundColor: isSelected ? "#1e293b" : "",
-                              color: isSelected ? "#ffffff" : "",
-                              borderColor: isSelected ? "#1e293b" : "",
-                              fontWeight: isSelected ? "700" : "normal",
-                            }}
                             className={`ap-pipeline-btn btn-${stage.toLowerCase().replace(/\s+/g, "-")} ${isSelected ? "active-stage-lock" : ""}`}
+                            type="button"
                           >
                             {stage}
                           </button>
@@ -683,7 +689,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                       </div>
                       <div className="ap-receipt-row">
                         <span>Delivery Logistics Tariff</span>
-                        <span style={{ color: "green", fontWeight: "bold" }}>FREE</span>
+                        <span className="ap-tariff-free">FREE</span>
                       </div>
                       <div className="ap-receipt-row master-total">
                         <span>Grand Bill Total</span>
@@ -710,19 +716,17 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         {/* CATALOG MAINTENANCE VIEW MODULE */}
         {activeTab === "catalog" && (
           <div className="ap-table-workspace-card">
-            <div
-              className="ap-workspace-header"
-              style={{ border: "none", padding: "0", marginBottom: "20px" }}
-            >
+            <div className="ap-workspace-header inner-catalog-hdr">
               <div>
                 <h2>Product Maintenance Catalog Matrix</h2>
-                <p style={{ fontSize: "0.9rem", color: "#64748b", margin: "4px 0 0 0" }}>
+                <p className="ap-catalog-hdr-subtext">
                   Review active marketplace visual cards and manage inventory stock logs.
                 </p>
               </div>
               <button
                 className="ap-create-new-item-btn"
                 onClick={openCreateModal}
+                type="button"
               >
                 ＋ Inject New SKU
               </button>
@@ -741,8 +745,8 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                       {p.description || "No custom descriptive summary provided."}
                     </p>
                     <div className="ap-catalog-meta-pills">
-                      <span>🏷️ {p.brand}</span>
-                      <span>⚖️ {p.weight || "250g"}</span>
+                      <span>... {p.brand}</span>
+                      <span>... {p.weight || "250g"}</span>
                     </div>
                     <div className="ap-catalog-card-action-bar">
                       <div className="ap-catalog-pricing-meta">
@@ -753,25 +757,18 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                           Logs: {p.stock_quantity || 0} units
                         </span>
                       </div>
-                      <div className="ap-catalog-actions-group" style={{ display: "flex", gap: "8px" }}>
+                      <div className="ap-catalog-actions-group">
                         <button
                           onClick={() => openEditModal(p)}
                           className="ap-catalog-edit-btn"
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#e2e8f0",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            color: "#334155",
-                          }}
+                          type="button"
                         >
                           Edit SKU
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id, p.name)}
                           className="ap-catalog-drop-btn"
+                          type="button"
                         >
                           Wipe
                         </button>
@@ -823,10 +820,10 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                           >
                             <td><b>#{t.id}</b></td>
                             <td>
-                              <div className="ap-tbl-user-name" style={{ fontWeight: "600" }}>
+                              <div className="ap-tbl-user-name text-weight-600">
                                 {t.subject || "No Subject Provided"}
                               </div>
-                              <div className="ap-tbl-user-sub" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <div className="ap-tbl-user-sub truncate-text-block">
                                 {t.message || t.description}
                               </div>
                             </td>
@@ -848,41 +845,34 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
               )}
             </div>
 
-            {/* RIGHT SIDE: DETAILED VIEW INSIGHT PANEL */}
+            {/* RIGHT SIDE: TICKET INTERACTION & STAGE MANAGEMENT PANE */}
             <div className="ap-orders-details-pane">
               {selectedTicket ? (
                 <div className="ap-details-panel-sticky">
                   <div className="ap-panel-inner-header complex-border">
                     <div>
-                      <h3>Ticket Details #{selectedTicket.id}</h3>
+                      <h3>Ticket Inquiry #{selectedTicket.id}</h3>
                       <span className="ap-panel-timestamp">
-                        Received: {selectedTicket.created_at ? new Date(selectedTicket.created_at).toLocaleString("en-IN") : "N/A"}
+                        User: {selectedTicket.name || "Anonymous Sender"}
                       </span>
                     </div>
-                    <span className={`ap-pipeline-indicator status-${(selectedTicket.status || "Pending").toLowerCase().replace(/\s+/g, "-")}`}>
-                      {selectedTicket.status || "Pending"}
+                    <span className={`ap-pipeline-indicator status-${selectedTicket.status.toLowerCase().replace(/\s+/g, "-")}`}>
+                      {selectedTicket.status}
                     </span>
                   </div>
 
-                  {/* ENUM CONSTRAINED CONTROL PANEL */}
+                  {/* STAGE ADJUSTMENT MODULE BLOCK */}
                   <div className="ap-control-pipeline-box">
-                    <label>Adjust Ticket Lifecycle Stage</label>
+                    <label>Update Ticket Stage Pipeline</label>
                     <div className="ap-pipeline-control-buttons">
                       {["Pending", "In Progress", "Resolved", "Spam"].map((stage) => {
-                        const currentActiveTicketStage = selectedTicket.status || "Pending";
-                        const isSelected = currentActiveTicketStage.toLowerCase() === stage.toLowerCase();
-
+                        const isSelected = selectedTicket.status.toLowerCase() === stage.toLowerCase();
                         return (
                           <button
                             key={stage}
                             onClick={() => handleUpdateTicketStatus(selectedTicket.id, stage)}
-                            style={{
-                              backgroundColor: isSelected ? "#0f172a" : "",
-                              color: isSelected ? "#ffffff" : "",
-                              borderColor: isSelected ? "#0f172a" : "",
-                              fontWeight: isSelected ? "700" : "normal",
-                            }}
                             className={`ap-pipeline-btn btn-${stage.toLowerCase().replace(/\s+/g, "-")} ${isSelected ? "active-stage-lock" : ""}`}
+                            type="button"
                           >
                             {stage}
                           </button>
@@ -891,46 +881,28 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                     </div>
                   </div>
 
-                  {/* USER COMMUNICATIONS INBOX BOX CONTAINER */}
+                  {/* MESSAGE BODY CONTENT CONTAINER */}
                   <div className="ap-logistics-profile-card">
-                    <h4>✉️ Customer Communication Core Log</h4>
-                    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <div>
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>From Sender Name:</span>
-                        <strong style={{ color: "#1e293b" }}>{selectedTicket.name || "Unregistered Profile"}</strong>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>Return Relay Address:</span>
-                        <a href={`mailto:${selectedTicket.email}`} style={{ color: "#2563eb", textDecoration: "none", fontSize: "0.9rem" }}>
-                          {selectedTicket.email}
-                        </a>
-                      </div>
-                      {selectedTicket.phone && (
-                        <div>
-                          <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>Contact Number:</span>
-                          <span style={{ color: "#1e293b", fontSize: "0.9rem" }}>{selectedTicket.phone}</span>
-                        </div>
-                      )}
-                      <hr style={{ border: "none", borderTop: "1px solid #e2e8f0", margin: "8px 0" }} />
-                      <div>
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block", marginBottom: "4px" }}>Subject Matter Header:</span>
-                        <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "1rem" }}>{selectedTicket.subject}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block", marginBottom: "6px" }}>Raw Message Body Payload:</span>
-                        <p style={{ margin: "0", padding: "14px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", color: "#334155", fontSize: "0.95rem", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
-                          {selectedTicket.message || selectedTicket.description}
-                        </p>
-                      </div>
+                    <h4>Inquiry Correspondence Text</h4>
+                    <div style={{ padding: "12px", background: "#f8f9fa", borderRadius: "6px", border: "1px solid #e3e6f0", marginTop: "8px" }}>
+                      <p style={{ fontWeight: "600", marginBottom: "6px", fontSize: "14px" }}>
+                        Subject: {selectedTicket.subject || "No Subject Data"}
+                      </p>
+                      <p style={{ whiteSpace: "pre-wrap", color: "#4e73df", fontSize: "13px", lineHeight: "1.5" }}>
+                        {selectedTicket.message || selectedTicket.description || "No diagnostic body context text sent."}
+                      </p>
+                    </div>
+                    <div style={{ marginTop: "12px", fontSize: "12px", color: "#858796" }}>
+                      Reply Vector Address: <b>{selectedTicket.email}</b>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="ap-no-focus-placeholder">
                   <div className="ap-placeholder-graphic">💬</div>
-                  <h3>No Active Message Focused</h3>
+                  <h3>No Active Support Record Focused</h3>
                   <p>
-                    Select an incoming query row from the feed pane on the left to read raw client strings and alter pipeline ticketing assignments.
+                    Select an inquiry from the customer feedback feed column on the left to review communication threads or adjust lifecycle stages.
                   </p>
                 </div>
               )}
@@ -938,170 +910,6 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           </div>
         )}
       </main>
-
-      {/* SYNCHRONIZED RE-ARCHITECTED POPUP MAINTENANCE MODAL */}
-      {showModal && (
-        <div className="ap-modal-backdrop">
-          <div className="ap-modal-window">
-            <div className="ap-modal-header">
-              <div>
-                <h3>
-                  {isEditing
-                    ? "⚙️ Modify Catalog Specifications Matrix"
-                    : "＋ Inject New Marketplace SKU Index"}
-                </h3>
-                <p className="ap-modal-subtitle">
-                  Configure structural warehouse metadata configurations deployed directly to global caches.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="ap-modal-close-icon"
-                onClick={() => setShowModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleProductFormSubmit} className="ap-modal-form">
-              <div className="ap-form-row ap-form-grid-2col">
-                <div className="ap-form-field">
-                  <span>
-                    Product Name<span className="required">*</span>
-                  </span>
-                  <input
-                    type="text"
-                    name="name"
-                    value={productForm.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Spicy Mixture"
-                    required
-                  />
-                </div>
-                <div className="ap-form-field">
-                  <span>Emoji Icon Badge</span>
-                  <input
-                    type="text"
-                    name="emoji"
-                    value={productForm.emoji}
-                    onChange={handleInputChange}
-                    style={{ textAlign: "center" }}
-                  />
-                </div>
-              </div>
-
-              <div className="ap-form-row ap-form-grid-2col">
-                <div className="ap-form-field">
-                  <span>
-                    Brand Designation<span className="required">*</span>
-                  </span>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={productForm.brand}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="ap-form-field">
-                  <span>Category Group</span>
-                  <select
-                    name="category"
-                    value={productForm.category}
-                    onChange={handleInputChange}
-                  >
-                    <option value="Snacks">Snacks</option>
-                    <option value="Sweets">Sweets</option>
-                    <option value="Spices">Spices</option>
-                    <option value="Beverages">Beverages</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="ap-form-row ap-form-grid-3col">
-                <div className="ap-form-field">
-                  <span>
-                    Price (₹)<span className="required">*</span>
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="price"
-                    value={productForm.price}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div className="ap-form-field">
-                  <span>
-                    Stock Qty<span className="required">*</span>
-                  </span>
-                  <input
-                    type="number"
-                    name="stock_quantity"
-                    value={productForm.stock_quantity}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="ap-form-field">
-                  <span>
-                    Net Weight<span className="required">*</span>
-                  </span>
-                  <input
-                    type="text"
-                    name="weight"
-                    value={productForm.weight}
-                    onChange={handleInputChange}
-                    placeholder="250g"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="ap-form-row">
-                <div className="ap-form-field">
-                  <span>Resource Image URL Endpoint Link</span>
-                  <input
-                    type="url"
-                    name="image_url"
-                    value={productForm.image_url}
-                    onChange={handleInputChange}
-                    placeholder="https://images.unsplash.com/..."
-                  />
-                </div>
-              </div>
-
-              <div className="ap-form-row">
-                <div className="ap-form-field">
-                  <span>Descriptive Summary Information Text Payload</span>
-                  <textarea
-                    name="description"
-                    value={productForm.description}
-                    onChange={handleInputChange}
-                    rows="3"
-                    placeholder="Enter explicit nutritional, batching, or product detail strings..."
-                  />
-                </div>
-              </div>
-
-              <div className="ap-modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="ap-btn-secondary"
-                >
-                  Abort
-                </button>
-                <button type="submit" className="ap-btn-primary">
-                  Deploy Matrix Configurations
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

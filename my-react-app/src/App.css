@@ -1910,3 +1910,153 @@ footer {
     display: none;
   }
 }
+
+/* ==========================================================================
+   16. SECURE ADMIN TERMINAL ACCESS GATEWAY
+   ========================================================================== */
+.admin-login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  padding: 20px;
+}
+
+.admin-login-card {
+  background: var(--white);
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(28, 20, 9, 0.06);
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--border);
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.admin-terminal-badge {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.admin-login-header h2 {
+  font-family: "Fraunces", serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.admin-login-header p {
+  color: var(--stone);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.admin-error-box {
+  background: #fef2f2;
+  color: var(--chili);
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+  font-weight: 600;
+  border: 1.5px solid rgba(192, 57, 43, 0.16);
+  line-height: 1.4;
+}
+
+.admin-field-group {
+  margin-bottom: 22px;
+}
+
+.admin-field-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--stone);
+}
+
+.admin-field-group input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border-med);
+  border-radius: 12px;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 15px;
+  background: var(--cream);
+  color: var(--ink);
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-field-group input:focus {
+  border-color: var(--saffron);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(220, 123, 42, 0.1);
+}
+
+.admin-field-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--cream-2);
+}
+
+.admin-submit-btn {
+  margin-top: 8px;
+  padding: 14px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-submit-btn:disabled {
+  background: var(--stone-light);
+  cursor: not-allowed;
+}
+
+.admin-back-btn {
+  background: none;
+  border: none;
+  color: var(--stone);
+  width: 100%;
+  text-align: center;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: color 0.2s ease;
+}
+
+.admin-back-btn:hover:not(:disabled) {
+  color: var(--saffron-dark);
+  text-decoration: underline;
+}
+
+.admin-back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Screen Scaler Bounds for Micro Devices */
+@media (max-width: 480px) {
+  .admin-login-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+  
+  .admin-login-header h2 {
+    font-size: 1.65rem;
+  }
+}
