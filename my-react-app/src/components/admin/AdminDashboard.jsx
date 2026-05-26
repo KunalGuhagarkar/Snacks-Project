@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 
@@ -38,27 +38,45 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     emoji: "😋",
   });
 
-  const getAuthHeaders = () => {
+  // Authentication Helpers
+  const handleCleanAuthRedirect = useCallback(() => {
+    localStorage.removeItem("nalapaka_user_token");
+    localStorage.removeItem("nalapaka_admin_token");
+    localStorage.removeItem("nalapaka_user");
+    setCurrentUser(null);
+    navigate("/admin/login", { replace: true });
+  }, [navigate, setCurrentUser]);
+
+  const getAuthHeaders = useCallback(() => {
     const token =
-      localStorage.getItem("nalapaka_user_token") ||
-      localStorage.getItem("nalapaka_admin_token");
+      localStorage.getItem("nalapaka_admin_token") ||
+      localStorage.getItem("nalapaka_user_token");
     return {
       "Content-Type": "application/json",
       Authorization: token ? `Bearer ${token}` : "",
     };
+  }, []);
+
+  // Generic State Change Input Controller
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setProductForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const fetchProducts = async () => {
+  // 📥 Async Data Fetching Handlers
+  const fetchProducts = useCallback(async () => {
     try {
       const productsRes = await fetch("http://localhost:5000/api/products");
-      if (productsRes.ok) setProducts(await productsRes.json());
+      if (productsRes.ok) {
+        const data = await productsRes.json();
+        setProducts(data);
+      }
     } catch (err) {
       console.error("Error updating catalog visualization items:", err);
     }
-  };
+  }, []);
 
-  // 📥 Fetch all customer support tickets
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
       const res = await fetch("http://localhost:5000/api/admin/support", {
@@ -67,20 +85,23 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
       if (res.ok) {
         const ticketData = await res.json();
         setTickets(ticketData);
-        if (ticketData.length > 0 && !selectedTicket) {
-          const firstTicket = ticketData[0];
-          const initialStatus = firstTicket.status || "Pending";
-          setSelectedTicket({
-            ...firstTicket,
-            status: initialStatus,
-          });
+
+        if (ticketData.length > 0) {
+          setSelectedTicket(
+            (prevTicket) =>
+              prevTicket || {
+                ...ticketData[0],
+                status: ticketData[0].status || "Pending",
+              },
+          );
         }
       }
     } catch (err) {
       console.error("Error pulling database support logs:", err);
     }
-  };
+  }, [getAuthHeaders]);
 
+  // Master Dashboard Core Lifecycle (Optimized Execution Grid)
   useEffect(() => {
     const fetchCoreDashboardData = async () => {
       try {
@@ -95,9 +116,14 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           return;
         }
 
-        const statsRes = await fetch("http://localhost:5000/api/admin/stats", {
-          headers,
-        });
+        // Parallel processing execution grid
+        const [statsRes, ordersRes] = await Promise.all([
+          fetch("http://localhost:5000/api/admin/stats", { headers }),
+          fetch("http://localhost:5000/api/admin/orders", { headers }),
+          fetchProducts(),
+          fetchTickets(),
+        ]);
+
         if (!statsRes.ok)
           throw new Error(`Server Analytics Synch Drop: ${statsRes.status}`);
         const statsData = await statsRes.json();
@@ -107,28 +133,23 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           totalProducts: parseInt(statsData.totalProducts || 0, 10),
         });
 
-        const ordersRes = await fetch(
-          "http://localhost:5000/api/admin/orders",
-          { headers },
-        );
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
           setOrders(ordersData);
-
-          if (ordersData.length > 0 && !selectedOrder) {
-            const firstOrder = ordersData[0];
-            const initialStatus =
-              firstOrder.status || firstOrder.order_status || "Pending";
-            setSelectedOrder({
-              ...firstOrder,
-              status: initialStatus,
-              order_status: initialStatus,
+          if (ordersData.length > 0) {
+            setSelectedOrder((prevOrder) => {
+              if (prevOrder) return prevOrder;
+              const firstOrder = ordersData[0];
+              const initialStatus =
+                firstOrder.status || firstOrder.order_status || "Pending";
+              return {
+                ...firstOrder,
+                status: initialStatus,
+                order_status: initialStatus,
+              };
             });
           }
         }
-
-        await fetchProducts();
-        await fetchTickets();
       } catch (err) {
         console.error(err);
         setError(`Operational Console Error: ${err.message}`);
@@ -136,9 +157,17 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         setLoading(false);
       }
     };
-    fetchCoreDashboardData();
-  }, [activeTab, currentUser]);
 
+    fetchCoreDashboardData();
+  }, [
+    currentUser,
+    getAuthHeaders,
+    handleCleanAuthRedirect,
+    fetchProducts,
+    fetchTickets,
+  ]);
+
+  // 🔄 Pipeline Modification Controls
   const handleUpdateStatus = async (orderId, targetStatus) => {
     try {
       const formattedStatus = targetStatus
@@ -164,34 +193,40 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           data.error || "Status pipeline shift rejected by server.",
         );
 
-      const updatedOrders = orders.map((o) =>
-        o.id === orderId
-          ? { ...o, order_status: formattedStatus, status: formattedStatus }
-          : o,
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.id === orderId
+            ? { ...o, order_status: formattedStatus, status: formattedStatus }
+            : o,
+        ),
       );
-      setOrders(updatedOrders);
 
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder((prev) => ({
-          ...prev,
-          status: formattedStatus,
-          order_status: formattedStatus,
-        }));
-      }
+      setSelectedOrder((prev) =>
+        prev && prev.id === orderId
+          ? { ...prev, status: formattedStatus, order_status: formattedStatus }
+          : prev,
+      );
     } catch (err) {
       alert(`Pipeline Shift Failure: ${err.message}`);
     }
   };
 
-  // 🔄 UPDATE TICKET STATUS IN FRONTEND PIPELINE
   const handleUpdateTicketStatus = async (ticketId, targetStatus) => {
     try {
+      const formattedStatus = targetStatus
+        .trim()
+        .split(" ")
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(" ");
+
       const res = await fetch(
         `http://localhost:5000/api/admin/support/${ticketId}/status`,
         {
           method: "PUT",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ status: targetStatus }),
+          body: JSON.stringify({ status: formattedStatus }),
         },
       );
 
@@ -201,22 +236,21 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
           data.error || "Ticket stage update rejected by server.",
         );
 
-      const updatedTickets = tickets.map((t) =>
-        t.id === ticketId ? { ...t, status: targetStatus } : t,
+      setTickets((prevTickets) =>
+        prevTickets.map((t) =>
+          t.id === ticketId ? { ...t, status: formattedStatus } : t,
+        ),
       );
-      setTickets(updatedTickets);
 
-      if (selectedTicket && selectedTicket.id === ticketId) {
-        setSelectedTicket((prev) => ({
-          ...prev,
-          status: targetStatus,
-        }));
-      }
+      setSelectedTicket((prev) =>
+        prev && prev.id === ticketId ? { ...prev, status: formattedStatus } : prev,
+      );
     } catch (err) {
       alert(`Ticket Stage Adjustment Failure: ${err.message}`);
     }
   };
 
+  // Modal Configuration Openers
   const openCreateModal = () => {
     setIsEditing(false);
     setCurrentProductId(null);
@@ -258,10 +292,8 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         ? `http://localhost:5000/api/admin/products/${currentProductId}`
         : "http://localhost:5000/api/admin/products";
 
-      const method = isEditing ? "PUT" : "POST";
-
       const res = await fetch(endpoint, {
-        method: method,
+        method: isEditing ? "PUT" : "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(productForm),
       });
@@ -270,19 +302,18 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
       if (!res.ok) throw new Error(data.error || "Database operation drop.");
 
       if (isEditing) {
-        setProducts(
-          products.map((p) => (p.id === currentProductId ? data.product : p)),
+        setProducts((prev) =>
+          prev.map((p) => (p.id === currentProductId ? data.product : p)),
         );
         alert("SKU specifications updated successfully!");
       } else {
-        setProducts([data.product, ...products]);
+        setProducts((prev) => [data.product, ...prev]);
         setStats((prev) => ({
           ...prev,
           totalProducts: prev.totalProducts + 1,
         }));
         alert("SKU introduced successfully!");
       }
-
       setShowModal(false);
     } catch (err) {
       alert(`Deployment Interruption: ${err.message}`);
@@ -300,7 +331,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         },
       );
       if (!res.ok) throw new Error("Erase block dropped by server.");
-      setProducts(products.filter((p) => p.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
       setStats((prev) => ({
         ...prev,
         totalProducts: Math.max(0, prev.totalProducts - 1),
@@ -309,14 +340,6 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     } catch (err) {
       alert(`Exception: ${err.message}`);
     }
-  };
-
-  const handleCleanAuthRedirect = () => {
-    localStorage.removeItem("nalapaka_user_token");
-    localStorage.removeItem("nalapaka_admin_token");
-    localStorage.removeItem("nalapaka_user");
-    setCurrentUser(null);
-    navigate("/admin/login", { replace: true });
   };
 
   const parseOrderItems = (itemsField) => {
@@ -330,12 +353,13 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="ap-loading-shroud">
         🔄 Syncing Master Operational Control Units...
       </div>
     );
+  }
 
   return (
     <div className="ap-dashboard-wrapper">
@@ -394,8 +418,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
               <div>
                 <h1>Storefront Core Engine Metrics</h1>
                 <p style={{ color: "#64748b", margin: "4px 0 0 0" }}>
-                  Live diagnostic overview metrics capturing public checkout
-                  sessions.
+                  Live diagnostic overview metrics capturing public checkout sessions.
                 </p>
               </div>
               <button
@@ -489,9 +512,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                                 {o.customer_name || o.name || "Guest Checkout"}
                               </div>
                               <div className="ap-tbl-user-sub">
-                                {o.customer_email ||
-                                  o.email ||
-                                  "No Email Profile"}
+                                {o.customer_email || o.email || "No Email Profile"}
                               </div>
                             </td>
                             <td>
@@ -528,18 +549,14 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                       <span className="ap-panel-timestamp">
                         Placed:{" "}
                         {selectedOrder.created_at
-                          ? new Date(selectedOrder.created_at).toLocaleString(
-                              "en-IN",
-                            )
+                          ? new Date(selectedOrder.created_at).toLocaleString("en-IN")
                           : "N/A"}
                       </span>
                     </div>
                     <span
                       className={`ap-pipeline-indicator status-${(selectedOrder.status || selectedOrder.order_status || "Pending").toLowerCase().replace(/\s+/g, "-")}`}
                     >
-                      {selectedOrder.status ||
-                        selectedOrder.order_status ||
-                        "Pending"}
+                      {selectedOrder.status || selectedOrder.order_status || "Pending"}
                     </span>
                   </div>
 
@@ -556,18 +573,14 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                         "Returned",
                       ].map((stage) => {
                         const activeStage =
-                          selectedOrder.status ||
-                          selectedOrder.order_status ||
-                          "Pending";
+                          selectedOrder.status || selectedOrder.order_status || "Pending";
                         const isSelected =
                           activeStage.toLowerCase() === stage.toLowerCase();
 
                         return (
                           <button
                             key={stage}
-                            onClick={() =>
-                              handleUpdateStatus(selectedOrder.id, stage)
-                            }
+                            onClick={() => handleUpdateStatus(selectedOrder.id, stage)}
                             style={{
                               backgroundColor: isSelected ? "#1e293b" : "",
                               color: isSelected ? "#ffffff" : "",
@@ -589,26 +602,19 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                       <div>
                         <span className="lbl">Client Identity:</span>
                         <span className="val">
-                          {selectedOrder.customer_name ||
-                            selectedOrder.name ||
-                            "Guest User"}
+                          {selectedOrder.customer_name || selectedOrder.name || "Guest User"}
                         </span>
                       </div>
                       <div>
                         <span className="lbl">Contact Vector:</span>
                         <span className="val">
-                          {selectedOrder.customer_email ||
-                            selectedOrder.email ||
-                            "Unspecified Email"}
+                          {selectedOrder.customer_email || selectedOrder.email || "Unspecified Email"}
                         </span>
                       </div>
                       <div>
                         <span className="lbl">Contact Phone:</span>
                         <span className="val">
-                          {selectedOrder.shipping_phone ||
-                            selectedOrder.phone ||
-                            selectedOrder.customer_phone ||
-                            "No Phone Registered"}
+                          {selectedOrder.shipping_phone || selectedOrder.phone || selectedOrder.customer_phone || "No Phone Registered"}
                         </span>
                       </div>
                       <div className="full-width">
@@ -616,10 +622,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                         <p className="val-address-block">
                           {selectedOrder.address_line_1
                             ? `${selectedOrder.address_line_1}${selectedOrder.address_line_2 ? `, ${selectedOrder.address_line_2}` : ""}, ${selectedOrder.city}, ${selectedOrder.state} - ${selectedOrder.postal_code}`
-                            : selectedOrder.shipping_address ||
-                              selectedOrder.address ||
-                              selectedOrder.customer_address ||
-                              "Standard Pickup Option Selected"}
+                            : selectedOrder.shipping_address || selectedOrder.address || selectedOrder.customer_address || "Standard Pickup Option Selected"}
                         </p>
                       </div>
                     </div>
@@ -628,46 +631,31 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                   <div className="ap-invoice-items-breakdown">
                     <h4>🛒 Cart Line-Items Inventory Matches</h4>
                     <div className="ap-breakdown-scroll-box">
-                      {parseOrderItems(
-                        selectedOrder.items || selectedOrder.order_items,
-                      ).length === 0 ? (
+                      {parseOrderItems(selectedOrder.items || selectedOrder.order_items).length === 0 ? (
                         <div className="ap-legacy-flat-bill">
                           <p>
-                            No modern line-item array mapped. Reading flat total
-                            aggregate pricing metrics.
+                            No modern line-item array mapped. Reading flat total aggregate pricing metrics.
                           </p>
                           <div className="ap-flat-row">
                             <span>Estimated Unit Allocation Package</span>{" "}
                             <b>
                               ₹
-                              {parseFloat(
-                                selectedOrder.total ||
-                                  selectedOrder.grand_total ||
-                                  0,
-                              ).toFixed(2)}
+                              {parseFloat(selectedOrder.total || selectedOrder.grand_total || 0).toFixed(2)}
                             </b>
                           </div>
                         </div>
                       ) : (
                         <div className="ap-line-items-stack">
-                          {parseOrderItems(
-                            selectedOrder.items || selectedOrder.order_items,
-                          ).map((item, idx) => (
-                            <div
-                              className="ap-line-item-row"
-                              key={item.id || idx}
-                            >
+                          {parseOrderItems(selectedOrder.items || selectedOrder.order_items).map((item, idx) => (
+                            <div className="ap-line-item-row" key={item.id || idx}>
                               <div className="ap-item-left-meta">
                                 <span className="ap-item-avatar-emoji">
                                   {item.emoji || "📦"}
                                 </span>
                                 <div>
-                                  <div className="ap-item-title-text">
-                                    {item.name}
-                                  </div>
+                                  <div className="ap-item-title-text">{item.name}</div>
                                   <div className="ap-item-sub-meta">
-                                    Brand: {item.brand || "Nalapaka"} | Weight:{" "}
-                                    {item.weight || "250g"}
+                                    Brand: {item.brand || "Nalapaka"} | Weight: {item.weight || "250g"}
                                   </div>
                                 </div>
                               </div>
@@ -677,10 +665,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                                 </span>
                                 <b className="ap-calculated-sum">
                                   ₹
-                                  {(
-                                    parseFloat(item.price || 0) *
-                                    (item.quantity || item.qty || 1)
-                                  ).toFixed(2)}
+                                  {(parseFloat(item.price || 0) * (item.quantity || item.qty || 1)).toFixed(2)}
                                 </b>
                               </div>
                             </div>
@@ -693,29 +678,17 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                       <div className="ap-receipt-row">
                         <span>Cart Subtotal</span>
                         <span>
-                          ₹
-                          {parseFloat(
-                            selectedOrder.total ||
-                              selectedOrder.grand_total ||
-                              0,
-                          ).toFixed(2)}
+                          ₹{parseFloat(selectedOrder.total || selectedOrder.grand_total || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="ap-receipt-row">
                         <span>Delivery Logistics Tariff</span>
-                        <span style={{ color: "green", fontWeight: "bold" }}>
-                          FREE
-                        </span>
+                        <span style={{ color: "green", fontWeight: "bold" }}>FREE</span>
                       </div>
                       <div className="ap-receipt-row master-total">
                         <span>Grand Bill Total</span>
                         <span>
-                          ₹
-                          {parseFloat(
-                            selectedOrder.total ||
-                              selectedOrder.grand_total ||
-                              0,
-                          ).toFixed(2)}
+                          ₹{parseFloat(selectedOrder.total || selectedOrder.grand_total || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -726,9 +699,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                   <div className="ap-placeholder-graphic">📋</div>
                   <h3>No Active Invoice Focused</h3>
                   <p>
-                    Select any ongoing streaming data invoice line-row from the
-                    tracking feed pane on the left to pull deeper logistics
-                    insights.
+                    Select any ongoing streaming data invoice line-row from the tracking feed pane on the left to pull deeper logistics insights.
                   </p>
                 </div>
               )}
@@ -745,15 +716,8 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
             >
               <div>
                 <h2>Product Maintenance Catalog Matrix</h2>
-                <p
-                  style={{
-                    fontSize: "0.9rem",
-                    color: "#64748b",
-                    margin: "4px 0 0 0",
-                  }}
-                >
-                  Review active marketplace visual cards and manage inventory
-                  stock logs.
+                <p style={{ fontSize: "0.9rem", color: "#64748b", margin: "4px 0 0 0" }}>
+                  Review active marketplace visual cards and manage inventory stock logs.
                 </p>
               </div>
               <button
@@ -767,20 +731,14 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
               {products.map((p) => (
                 <div key={p.id} className="ap-product-entity-card">
                   <img
-                    src={
-                      p.image_url ||
-                      "https://images.unsplash.com/photo-1589476993333-f55b84301219?w=500"
-                    }
+                    src={p.image_url || "https://images.unsplash.com/photo-1589476993333-f55b84301219?w=500"}
                     alt={p.name}
                     className="ap-catalog-card-img-cover"
                   />
                   <div className="ap-catalog-card-body">
-                    <h4>
-                      {p.emoji || "😋"} {p.name}
-                    </h4>
+                    <h4>{p.emoji || "😋"} {p.name}</h4>
                     <p className="ap-catalog-card-desc-text">
-                      {p.description ||
-                        "No custom descriptive summary provided."}
+                      {p.description || "No custom descriptive summary provided."}
                     </p>
                     <div className="ap-catalog-meta-pills">
                       <span>🏷️ {p.brand}</span>
@@ -795,10 +753,7 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
                           Logs: {p.stock_quantity || 0} units
                         </span>
                       </div>
-                      <div
-                        className="ap-catalog-actions-group"
-                        style={{ display: "flex", gap: "8px" }}
-                      >
+                      <div className="ap-catalog-actions-group" style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() => openEditModal(p)}
                           className="ap-catalog-edit-btn"
@@ -843,61 +798,45 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
 
               {tickets.length === 0 ? (
                 <p className="ap-empty-dataset-text">
-                  No pending support requests recorded.
+                  No support records found in database tables.
                 </p>
               ) : (
                 <div className="ap-pane-table-scroll">
                   <table className="ap-interactive-invoice-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Sender Details</th>
-                        <th>Subject Category</th>
+                        <th>Ticket ID</th>
+                        <th>Subject / Issue</th>
+                        <th>Sender</th>
                         <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {tickets.map((t) => {
-                        const isFocused =
-                          selectedTicket && selectedTicket.id === t.id;
-                        const currentTicketStatus = t.status || "Pending";
+                        const currentStatus = t.status || "Pending";
+                        const isFocused = selectedTicket && selectedTicket.id === t.id;
                         return (
                           <tr
                             key={t.id}
-                            onClick={() =>
-                              setSelectedTicket({
-                                ...t,
-                                status: currentTicketStatus,
-                              })
-                            }
+                            onClick={() => setSelectedTicket({ ...t, status: currentStatus })}
                             className={`ap-row-selectable ${isFocused ? "ap-row-focused" : ""}`}
                           >
+                            <td><b>#{t.id}</b></td>
                             <td>
-                              <b>#{t.id}</b>
+                              <div className="ap-tbl-user-name" style={{ fontWeight: "600" }}>
+                                {t.subject || "No Subject Provided"}
+                              </div>
+                              <div className="ap-tbl-user-sub" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {t.message || t.description}
+                              </div>
                             </td>
                             <td>
-                              <div className="ap-tbl-user-name">{t.name}</div>
+                              <div className="ap-tbl-user-name">{t.name || "User"}</div>
                               <div className="ap-tbl-user-sub">{t.email}</div>
                             </td>
                             <td>
-                              <span
-                                style={{
-                                  fontSize: "0.8rem",
-                                  padding: "2px 8px",
-                                  borderRadius: "4px",
-                                  backgroundColor: "#f1f5f9",
-                                  fontWeight: "600",
-                                  color: "#475569",
-                                }}
-                              >
-                                {t.subject_type || "General inquiry"}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                className={`ap-pipeline-indicator status-${currentTicketStatus.toLowerCase().replace(/\s+/g, "-")}`}
-                              >
-                                {currentTicketStatus}
+                              <span className={`ap-pipeline-indicator status-${currentStatus.toLowerCase().replace(/\s+/g, "-")}`}>
+                                {currentStatus}
                               </span>
                             </td>
                           </tr>
@@ -909,148 +848,89 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
               )}
             </div>
 
-            {/* RIGHT SIDE: EXPANDED TICKET INSIGHT INSPECTOR */}
+            {/* RIGHT SIDE: DETAILED VIEW INSIGHT PANEL */}
             <div className="ap-orders-details-pane">
               {selectedTicket ? (
                 <div className="ap-details-panel-sticky">
                   <div className="ap-panel-inner-header complex-border">
                     <div>
-                      <h3>Support Log Reference #{selectedTicket.id}</h3>
+                      <h3>Ticket Details #{selectedTicket.id}</h3>
                       <span className="ap-panel-timestamp">
-                        Received:{" "}
-                        {selectedTicket.created_at
-                          ? new Date(selectedTicket.created_at).toLocaleString(
-                              "en-IN",
-                            )
-                          : "Just now"}
+                        Received: {selectedTicket.created_at ? new Date(selectedTicket.created_at).toLocaleString("en-IN") : "N/A"}
                       </span>
                     </div>
-                    <span
-                      className={`ap-pipeline-indicator status-${(selectedTicket.status || "Pending").toLowerCase().replace(/\s+/g, "-")}`}
-                    >
+                    <span className={`ap-pipeline-indicator status-${(selectedTicket.status || "Pending").toLowerCase().replace(/\s+/g, "-")}`}>
                       {selectedTicket.status || "Pending"}
                     </span>
                   </div>
 
-                  {/* TICKET STAGE MANAGEMENT WORKFLOW ACTION BOX */}
-                  <div
-                    className="ap-control-pipeline-box"
-                    style={{ marginBottom: "16px" }}
-                  >
-                    <label>Ticket Lifecycle Stage Controls</label>
+                  {/* ENUM CONSTRAINED CONTROL PANEL */}
+                  <div className="ap-control-pipeline-box">
+                    <label>Adjust Ticket Lifecycle Stage</label>
                     <div className="ap-pipeline-control-buttons">
-                      {["Pending", "In Progress", "Resolved", "Spam"].map(
-                        (stage) => {
-                          const activeStage =
-                            selectedTicket.status || "Pending";
-                          const isSelected =
-                            activeStage.toLowerCase() === stage.toLowerCase();
+                      {["Pending", "In Progress", "Resolved", "Spam"].map((stage) => {
+                        const currentActiveTicketStage = selectedTicket.status || "Pending";
+                        const isSelected = currentActiveTicketStage.toLowerCase() === stage.toLowerCase();
 
-                          return (
-                            <button
-                              key={stage}
-                              onClick={() =>
-                                handleUpdateTicketStatus(
-                                  selectedTicket.id,
-                                  stage,
-                                )
-                              }
-                              style={{
-                                backgroundColor: isSelected ? "#e07b2a" : "",
-                                color: isSelected ? "#ffffff" : "",
-                                borderColor: isSelected ? "#e07b2a" : "",
-                                fontWeight: isSelected ? "700" : "normal",
-                              }}
-                              className={`ap-pipeline-btn btn-${stage.toLowerCase().replace(/\s+/g, "-")} ${isSelected ? "active-stage-lock" : ""}`}
-                            >
-                              {stage}
-                            </button>
-                          );
-                        },
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    className="ap-logistics-profile-card"
-                    style={{ marginTop: "16px" }}
-                  >
-                    <h4>👤 Sender Profile</h4>
-                    <div className="ap-logistics-grid">
-                      <div>
-                        <span className="lbl">Name:</span>
-                        <span className="val">{selectedTicket.name}</span>
-                      </div>
-                      <div>
-                        <span className="lbl">Email Address:</span>
-                        <span className="val">
-                          <a
-                            href={`mailto:${selectedTicket.email}?subject=Re: Nalapaka Support Ticket %23${selectedTicket.id}`}
+                        return (
+                          <button
+                            key={stage}
+                            onClick={() => handleUpdateTicketStatus(selectedTicket.id, stage)}
                             style={{
-                              color: "#e07b2a",
-                              textDecoration: "underline",
+                              backgroundColor: isSelected ? "#0f172a" : "",
+                              color: isSelected ? "#ffffff" : "",
+                              borderColor: isSelected ? "#0f172a" : "",
+                              fontWeight: isSelected ? "700" : "normal",
                             }}
+                            className={`ap-pipeline-btn btn-${stage.toLowerCase().replace(/\s+/g, "-")} ${isSelected ? "active-stage-lock" : ""}`}
                           >
-                            {selectedTicket.email}
-                          </a>
-                        </span>
-                      </div>
-                      <div>
-                        <span className="lbl">User Database Link ID:</span>
-                        <span className="val">
-                          {selectedTicket.user_id
-                            ? `Registered Client (#${selectedTicket.user_id})`
-                            : "Guest Visitor"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="lbl">Ticket Type classification:</span>
-                        <span className="val" style={{ fontWeight: "bold" }}>
-                          {selectedTicket.subject_type}
-                        </span>
-                      </div>
+                            {stage}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div
-                    className="ap-control-pipeline-box"
-                    style={{
-                      padding: "16px",
-                      background: "#f8fafc",
-                      borderRadius: "8px",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.8rem",
-                        textTransform: "uppercase",
-                        color: "#64748b",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Submitted Message Payload
-                    </label>
-                    <p
-                      style={{
-                        margin: "8px 0 0 0",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: "1.6",
-                        color: "#1e293b",
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      "{selectedTicket.message}"
-                    </p>
+                  {/* USER COMMUNICATIONS INBOX BOX CONTAINER */}
+                  <div className="ap-logistics-profile-card">
+                    <h4>✉️ Customer Communication Core Log</h4>
+                    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>From Sender Name:</span>
+                        <strong style={{ color: "#1e293b" }}>{selectedTicket.name || "Unregistered Profile"}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>Return Relay Address:</span>
+                        <a href={`mailto:${selectedTicket.email}`} style={{ color: "#2563eb", textDecoration: "none", fontSize: "0.9rem" }}>
+                          {selectedTicket.email}
+                        </a>
+                      </div>
+                      {selectedTicket.phone && (
+                        <div>
+                          <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>Contact Number:</span>
+                          <span style={{ color: "#1e293b", fontSize: "0.9rem" }}>{selectedTicket.phone}</span>
+                        </div>
+                      )}
+                      <hr style={{ border: "none", borderTop: "1px solid #e2e8f0", margin: "8px 0" }} />
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block", marginBottom: "4px" }}>Subject Matter Header:</span>
+                        <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "1rem" }}>{selectedTicket.subject}</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block", marginBottom: "6px" }}>Raw Message Body Payload:</span>
+                        <p style={{ margin: "0", padding: "14px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", color: "#334155", fontSize: "0.95rem", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+                          {selectedTicket.message || selectedTicket.description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="ap-no-focus-placeholder">
                   <div className="ap-placeholder-graphic">💬</div>
-                  <h3>No Ticket Selected</h3>
+                  <h3>No Active Message Focused</h3>
                   <p>
-                    Pick a submission from the communication logs on the left
-                    side to respond or change ticket states.
+                    Select an incoming query row from the feed pane on the left to read raw client strings and alter pipeline ticketing assignments.
                   </p>
                 </div>
               )}
@@ -1059,152 +939,163 @@ export default function AdminDashboard({ currentUser, setCurrentUser }) {
         )}
       </main>
 
-      {/* ＋ OVERLAY MODAL: INVENTORY ADD & EDIT SYSTEM */}
+      {/* SYNCHRONIZED RE-ARCHITECTED POPUP MAINTENANCE MODAL */}
       {showModal && (
         <div className="ap-modal-backdrop">
-          <div className="ap-modal-surface">
+          <div className="ap-modal-window">
             <div className="ap-modal-header">
-              <h3>
-                {isEditing
-                  ? "📝 Modify SKU Properties"
-                  : "✨ Introduce New Catalog SKU"}
-              </h3>
+              <div>
+                <h3>
+                  {isEditing
+                    ? "⚙️ Modify Catalog Specifications Matrix"
+                    : "＋ Inject New Marketplace SKU Index"}
+                </h3>
+                <p className="ap-modal-subtitle">
+                  Configure structural warehouse metadata configurations deployed directly to global caches.
+                </p>
+              </div>
               <button
-                className="ap-modal-close-x"
+                type="button"
+                className="ap-modal-close-icon"
                 onClick={() => setShowModal(false)}
               >
-                x
+                ✕
               </button>
             </div>
-            <form onSubmit={handleProductFormSubmit}>
-              <div className="ap-form-grid-layout">
-                <div className="form-group full-width">
-                  <label>Product Name *</label>
+
+            <form onSubmit={handleProductFormSubmit} className="ap-modal-form">
+              <div className="ap-form-row ap-form-grid-2col">
+                <div className="ap-form-field">
+                  <span>
+                    Product Name<span className="required">*</span>
+                  </span>
                   <input
                     type="text"
+                    name="name"
                     value={productForm.name}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Spicy Mixture"
                     required
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, name: e.target.value })
-                    }
-                    placeholder="e.g., Special Kodubale"
                   />
                 </div>
-                <div className="form-group">
-                  <label>Brand Name *</label>
+                <div className="ap-form-field">
+                  <span>Emoji Icon Badge</span>
                   <input
                     type="text"
-                    value={productForm.brand}
-                    required
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, brand: e.target.value })
-                    }
+                    name="emoji"
+                    value={productForm.emoji}
+                    onChange={handleInputChange}
+                    style={{ textAlign: "center" }}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Category Group</label>
+              </div>
+
+              <div className="ap-form-row ap-form-grid-2col">
+                <div className="ap-form-field">
+                  <span>
+                    Brand Designation<span className="required">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    name="brand"
+                    value={productForm.brand}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="ap-form-field">
+                  <span>Category Group</span>
                   <select
+                    name="category"
                     value={productForm.category}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        category: e.target.value,
-                      })
-                    }
+                    onChange={handleInputChange}
                   >
                     <option value="Snacks">Snacks</option>
                     <option value="Sweets">Sweets</option>
-                    <option value="Masalas">Masalas / Powders</option>
-                    <option value="Pickles">Pickles</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Beverages">Beverages</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Retail Pricing (INR) *</label>
+              </div>
+
+              <div className="ap-form-row ap-form-grid-3col">
+                <div className="ap-form-field">
+                  <span>
+                    Price (₹)<span className="required">*</span>
+                  </span>
                   <input
                     type="number"
                     step="0.01"
+                    name="price"
                     value={productForm.price}
-                    required
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, price: e.target.value })
-                    }
+                    onChange={handleInputChange}
                     placeholder="0.00"
+                    required
                   />
                 </div>
-                <div className="form-group">
-                  <label>Warehouse Stock Units</label>
+                <div className="ap-form-field">
+                  <span>
+                    Stock Qty<span className="required">*</span>
+                  </span>
                   <input
                     type="number"
+                    name="stock_quantity"
                     value={productForm.stock_quantity}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        stock_quantity: e.target.value,
-                      })
-                    }
+                    onChange={handleInputChange}
+                    required
                   />
                 </div>
-                <div className="form-group">
-                  <label>Net Package Weight</label>
+                <div className="ap-form-field">
+                  <span>
+                    Net Weight<span className="required">*</span>
+                  </span>
                   <input
                     type="text"
+                    name="weight"
                     value={productForm.weight}
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, weight: e.target.value })
-                    }
+                    onChange={handleInputChange}
                     placeholder="250g"
+                    required
                   />
                 </div>
-                <div className="form-group">
-                  <label>Display Avatar Emoji</label>
-                  <input
-                    type="text"
-                    value={productForm.emoji}
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, emoji: e.target.value })
-                    }
-                    placeholder="😋"
-                  />
-                </div>
-                <div className="form-group full-width">
-                  <label>Image Resource URL</label>
+              </div>
+
+              <div className="ap-form-row">
+                <div className="ap-form-field">
+                  <span>Resource Image URL Endpoint Link</span>
                   <input
                     type="url"
+                    name="image_url"
                     value={productForm.image_url}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        image_url: e.target.value,
-                      })
-                    }
+                    onChange={handleInputChange}
                     placeholder="https://images.unsplash.com/..."
                   />
                 </div>
-                <div className="form-group full-width">
-                  <label>Description Summary</label>
+              </div>
+
+              <div className="ap-form-row">
+                <div className="ap-form-field">
+                  <span>Descriptive Summary Information Text Payload</span>
                   <textarea
-                    rows="3"
+                    name="description"
                     value={productForm.description}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="Describe key ingredients, flavor profiles or warnings..."
-                  ></textarea>
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Enter explicit nutritional, batching, or product detail strings..."
+                  />
                 </div>
               </div>
-              <div className="ap-modal-actions-footer">
+
+              <div className="ap-modal-footer">
                 <button
                   type="button"
-                  className="ap-cancel-modal-btn"
                   onClick={() => setShowModal(false)}
+                  className="ap-btn-secondary"
                 >
-                  Discard
+                  Abort
                 </button>
-                <button type="submit" className="ap-save-modal-btn">
-                  Commit Changes
+                <button type="submit" className="ap-btn-primary">
+                  Deploy Matrix Configurations
                 </button>
               </div>
             </form>

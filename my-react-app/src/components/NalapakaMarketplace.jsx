@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import "../App.css";
 
 // Component Imports
@@ -17,7 +17,7 @@ import AuthModal from "./marketplace/AuthModal";
 import ProductDetails from "./marketplace/ProductDetails";
 import CartDrawer from "./marketplace/CartDrawer";
 import WishlistDrawer from "./marketplace/WishlistDrawer";
-import ContactSupport from "./marketplace/ContactSupport"; // Loaded support gateway modal
+import ContactSupport from "./marketplace/ContactSupport";
 
 export default function NalapakaMarketplace({
   cartItems = [],
@@ -32,7 +32,7 @@ export default function NalapakaMarketplace({
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
-  const [isSupportOpen, setIsSupportOpen] = useState(false); // 👈 Added state hook
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeBrand, setActiveBrand] = useState("all");
   const [activeCat, setActiveCat] = useState("all");
@@ -42,13 +42,16 @@ export default function NalapakaMarketplace({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
+  // UX Optimization States
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
+  
   const [products, setProducts] = useState([]);
-
-  // 💾 Database state buckets
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // Search Debouncing Tracker
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -57,23 +60,23 @@ export default function NalapakaMarketplace({
   }, [searchQuery]);
 
   const changeFilter = (filterId) => {
-    setLoading(true);
+    setIsFiltering(true);
     setActiveFilter(filterId);
   };
   const changeCategory = (catId) => {
-    setLoading(true);
+    setIsFiltering(true);
     setActiveCat(catId);
   };
   const changeBrand = (brandId) => {
-    setLoading(true);
+    setIsFiltering(true);
     setActiveBrand(brandId);
   };
   const changeSearch = (query) => {
-    setLoading(true);
+    setIsFiltering(true);
     setSearchQuery(query);
   };
 
-  // Fetch brand items from database on initial render
+  // Fetch Static Assets (Brands Matrix)
   useEffect(() => {
     let isMounted = true;
     fetch("http://localhost:5000/api/brands")
@@ -83,12 +86,10 @@ export default function NalapakaMarketplace({
       })
       .catch((err) => console.error("Error loading brands matrix:", err));
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Fetch category items from database on initial render
+  // Fetch Static Assets (Categories Matrix)
   useEffect(() => {
     let isMounted = true;
     fetch("http://localhost:5000/api/categories")
@@ -98,12 +99,10 @@ export default function NalapakaMarketplace({
       })
       .catch((err) => console.error("Error loading categories matrix:", err));
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Fetch product items dynamically combined with filters
+  // Dynamic Product Feed Fetcher Engine
   useEffect(() => {
     let isMounted = true;
     const queryParams = new URLSearchParams({
@@ -120,15 +119,16 @@ export default function NalapakaMarketplace({
       })
       .catch((err) => console.error("Error loading products:", err))
       .finally(() => {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setIsInitialLoading(false);
+          setIsFiltering(false);
+        }
       });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [activeFilter, activeBrand, activeCat, debouncedSearchQuery]);
 
-  // Load backend cart tracking matrix
+  // Sync Global User Shopping Session Cart Upstream
   useEffect(() => {
     if (!currentUser?.id) return;
     let isMounted = true;
@@ -147,21 +147,22 @@ export default function NalapakaMarketplace({
           quantity: item.quantity,
           stock_quantity: item.stock_quantity,
         }));
+        
         setCartItems(formattedCart);
         localStorage.setItem("nalapaka_cart", JSON.stringify(formattedCart));
       })
       .catch((err) => {
+        console.error("Cart sync down failure, recovering cached local copy:", err);
         const localCachedCart = localStorage.getItem("nalapaka_cart");
-        if (localCachedCart && isMounted)
+        if (localCachedCart && isMounted) {
           setCartItems(JSON.parse(localCachedCart));
-        console.log(err);
+        }
       });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser, setCartItems]);
+    return () => { isMounted = false; };
+  }, [currentUser?.id, setCartItems]); // Memoized bounds prevent infinite closed-loop lifecycle execution
 
+  // Toast System Cleaners
   useEffect(() => {
     if (toast.show) {
       const timer = setTimeout(() => setToast({ show: false, msg: "" }), 2800);
@@ -169,14 +170,15 @@ export default function NalapakaMarketplace({
     }
   }, [toast.show]);
 
-  const showToast = (msg) => setToast({ show: true, msg });
+  const showToast = useCallback((msg) => setToast({ show: true, msg }), []);
+
   const totalCartCount = useMemo(
     () => cartItems.reduce((acc, item) => acc + item.quantity, 0),
-    [cartItems],
+    [cartItems]
   );
   const totalWishlistCount = useMemo(
     () => Object.values(wishlist).filter(Boolean).length,
-    [wishlist],
+    [wishlist]
   );
 
   const handleAuthSuccess = (userData, successMsg) => {
@@ -192,16 +194,19 @@ export default function NalapakaMarketplace({
     showToast("Logged out successfully!");
   };
 
-  // Add fresh item with inventory checks
-  const handleAddToCart = async (e, productId, productName) => {
+  // Adaptive Multi-Sourced Item Ingestor
+  const handleAddToCart = async (e, productId, productName, customQty = 1) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
 
-    if (!products || products.length === 0) return;
-    const productData = products.find((p) => p.id === productId);
-    if (!productData) return;
+    // Trace across active product feeds AND current cart records to bypass search isolation bugs
+    const productData = products.find((p) => p.id === productId) || cartItems.find((item) => item.id === productId);
+    if (!productData) {
+      showToast("⚠️ Could not trace item specifications. Please refresh.");
+      return;
+    }
 
     const currentCartRecord = cartItems.find((item) => item.id === productId);
-    const plannedQuantity = currentCartRecord ? currentCartRecord.quantity + 1 : 1;
+    const plannedQuantity = currentCartRecord ? currentCartRecord.quantity + customQty : customQty;
     const maxAvailableStock = productData.stock_quantity !== undefined ? productData.stock_quantity : 999;
 
     if (plannedQuantity > maxAvailableStock) {
@@ -215,11 +220,11 @@ export default function NalapakaMarketplace({
       if (existingItem) {
         nextItems = prevItems.map((item) =>
           item.id === productId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
+            ? { ...item, quantity: item.quantity + customQty }
+            : item
         );
       } else {
-        nextItems = [...prevItems, { ...productData, quantity: 1 }];
+        nextItems = [...prevItems, { ...productData, quantity: customQty }];
       }
       localStorage.setItem("nalapaka_cart", JSON.stringify(nextItems));
       return nextItems;
@@ -233,17 +238,16 @@ export default function NalapakaMarketplace({
           body: JSON.stringify({
             userId: currentUser.id,
             productId,
-            quantity: 1,
+            quantity: customQty,
           }),
         });
       } catch (err) {
-        console.error(err);
+        console.error("Failed to commit item update upstream:", err);
       }
     }
-    showToast(`${productName} added to basket`);
+    showToast(`🛒 Added ${customQty}x "${productName}" to basket.`);
   };
 
-  // Unified mutation updater with active boundary limits
   const handleUpdateQuantity = async (productId, change) => {
     let updatedQuantity = 0;
     let stockReachedExceeded = false;
@@ -326,7 +330,7 @@ export default function NalapakaMarketplace({
         currentUser={currentUser}
         onLogout={handleLogout}
         onOpenAuth={() => setIsModalOpen(true)}
-        onOpenSupport={() => setIsSupportOpen(true)} // 👈 Connected navbar trigger
+        onOpenSupport={() => setIsSupportOpen(true)}
         onActionToast={showToast}
         searchQuery={searchQuery}
         setSearchQuery={changeSearch}
@@ -341,9 +345,7 @@ export default function NalapakaMarketplace({
 
       {selectedProduct ? (
         (() => {
-          const cartMatch = cartItems.find(
-            (item) => item.id === selectedProduct.id,
-          );
+          const cartMatch = cartItems.find((item) => item.id === selectedProduct.id);
           const currentCount = cartMatch ? cartMatch.quantity : 0;
           return (
             <ProductDetails
@@ -351,9 +353,7 @@ export default function NalapakaMarketplace({
               onBack={() => setSelectedProduct(null)}
               currentCount={currentCount}
               onUpdateQuantity={handleUpdateQuantity}
-              onAddCart={(e) =>
-                handleAddToCart(e, selectedProduct.id, selectedProduct.name)
-              }
+              onAddCart={(e, id, name, qty) => handleAddToCart(e, id, name, qty)}
             />
           );
         })()
@@ -380,11 +380,17 @@ export default function NalapakaMarketplace({
             totalCount={products.length}
           />
 
-          <section className="products-section">
-            <div className="product-grid">
-              {loading ? (
-                <div style={{ color: "var(--stone)", padding: "48px 16px", gridColumn: "1 / -1", textAlign: "center" }}>
-                  <p style={{ fontSize: "1.2rem", fontWeight: "bold" }}>Pulling items...</p>
+          <section className="products-section" style={{ position: "relative", minHeight: "400px" }}>
+            {isFiltering && (
+              <div className="filter-loading-overlay">
+                <span>Refreshing catalog selection...</span>
+              </div>
+            )}
+
+            <div className={`product-grid ${isFiltering ? "grid-faded" : ""}`}>
+              {isInitialLoading ? (
+                <div className="grid-notice-box">
+                  <p>Pulling items...</p>
                 </div>
               ) : products.length > 0 ? (
                 products.map((p) => {
@@ -396,22 +402,22 @@ export default function NalapakaMarketplace({
                       key={p.id}
                       id={`product-${p.id}`}
                       onClick={() => setSelectedProduct(p)}
-                      style={{ cursor: "pointer", position: "relative" }}
+                      className="product-card-click-wrapper"
                     >
                       <ProductCard
                         product={p}
                         isWishlisted={!!wishlist[String(p.id)]}
                         currentCount={currentCount}
                         onToggleWishlist={handleToggleWishlist}
-                        onAddCart={(e, id, name) => handleAddToCart(e, id, name)}
+                        onAddCart={handleAddToCart}
                         onUpdateQuantity={handleUpdateQuantity}
                       />
                     </div>
                   );
                 })
               ) : (
-                <div style={{ color: "var(--stone)", padding: "48px 16px", gridColumn: "1 / -1", textAlign: "center" }}>
-                  <p style={{ fontSize: "1.2rem", fontWeight: "bold" }}>No snacks found.</p>
+                <div className="grid-notice-box">
+                  <p>No snacks found matching these filters.</p>
                 </div>
               )}
             </div>
@@ -425,14 +431,13 @@ export default function NalapakaMarketplace({
 
       <div className={`toast ${toast.show ? "show" : ""}`}>{toast.msg}</div>
       
-      {/* 📬 MODAL PORTAL PORT OVERLAYS */}
+      {/* OVERLAY PORTALS */}
       <ContactSupport 
         isOpen={isSupportOpen} 
         onClose={() => setIsSupportOpen(false)} 
         currentUser={currentUser} 
         onActionToast={showToast} 
       />
-
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

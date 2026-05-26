@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CartDrawer({
@@ -8,6 +9,14 @@ export default function CartDrawer({
   currentUser,
 }) {
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Clear errors automatically whenever the drawer state toggles
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage("");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -20,10 +29,7 @@ export default function CartDrawer({
   );
 
   const freeShippingThreshold = 499;
-
-  const shippingCharge =
-    subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 49;
-
+  const shippingCharge = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 49;
   const grandTotal = subtotal + shippingCharge;
 
   // ==========================================
@@ -31,12 +37,12 @@ export default function CartDrawer({
   // ==========================================
   const handleProceedCheckout = () => {
     if (!currentUser) {
-      alert("⚠️ Please login before checkout");
+      setErrorMessage("⚠️ Please sign in or register to complete your order checkout.");
       return;
     }
 
     if (cartItems.length === 0) {
-      alert("🛒 Your basket is empty");
+      setErrorMessage("🛒 Your basket is currently empty.");
       return;
     }
 
@@ -53,8 +59,15 @@ export default function CartDrawer({
     });
   };
 
+  // Defensive close selector: Only trigger if the background overlay mask itself is targeted
+  const handleBackdropClick = (e) => {
+    if (e.target.classList.contains("cart-overlay")) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="cart-overlay" onClick={onClose}>
+    <div className="cart-overlay" onClick={handleBackdropClick}>
       <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
         {/* ========================================== */}
         {/* HEADER */}
@@ -92,6 +105,25 @@ export default function CartDrawer({
             {cartItems.reduce((a, c) => a + c.quantity, 0)} items)
           </p>
         </div>
+
+        {/* ========================================== */}
+        {/* INLINE ERROR MESSAGES */}
+        {/* ========================================== */}
+        {errorMessage && (
+          <div 
+            style={{
+              background: "#fdf2f2",
+              color: "#ec4899",
+              padding: "12px 24px",
+              fontSize: "0.85rem",
+              textAlign: "center",
+              borderBottom: "1px solid #fce7f3",
+              fontWeight: "500"
+            }}
+          >
+            {errorMessage}
+          </div>
+        )}
 
         {/* ========================================== */}
         {/* ITEMS LIST */}
@@ -211,7 +243,10 @@ export default function CartDrawer({
                     }}
                   >
                     <button
-                      onClick={() => onUpdateQuantity(item.id, -1)}
+                      onClick={() => {
+                        onUpdateQuantity(item.id, -1);
+                        setErrorMessage("");
+                      }}
                       style={{
                         border: "none",
                         background: "none",
@@ -236,7 +271,10 @@ export default function CartDrawer({
                     </span>
 
                     <button
-                      onClick={() => onUpdateQuantity(item.id, 1)}
+                      onClick={() => {
+                        onUpdateQuantity(item.id, 1);
+                        setErrorMessage("");
+                      }}
                       style={{
                         border: "none",
                         background: "none",
@@ -280,8 +318,7 @@ export default function CartDrawer({
                   border: "1px solid rgba(224, 123, 42, 0.15)",
                 }}
               >
-                💡 Add ₹{freeShippingThreshold - subtotal} more for FREE
-                shipping!
+                💡 Add ₹{freeShippingThreshold - subtotal} more for FREE shipping!
               </div>
             )}
 
@@ -311,13 +348,12 @@ export default function CartDrawer({
                 }}
               >
                 <span>Delivery Fee</span>
-
                 <span>
                   {shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`}
                 </span>
               </div>
 
-              <hr />
+              <hr style={{ border: "0", borderTop: "1px solid var(--cream-3)", margin: "4px 0" }} />
 
               <div
                 style={{
@@ -328,7 +364,6 @@ export default function CartDrawer({
                 }}
               >
                 <span>Grand Total</span>
-
                 <span style={{ color: "var(--saffron-dark)" }}>
                   ₹{grandTotal}
                 </span>

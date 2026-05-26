@@ -2,10 +2,9 @@ export default function CategoryRow({
   activeCat = 'all', 
   setActiveCat, 
   onActionToast,
-  categories = [] // 👈 Dynamic array injected straight from your database state pipeline
+  categories = [] // Dynamic array injected straight from your database state pipeline
 }) {
   
-  // Safe handler to prevent event bubbling and unintended render ticks
   const handleCategoryClick = (id) => {
     if (setActiveCat) {
       setActiveCat(id);
@@ -36,7 +35,7 @@ export default function CategoryRow({
       <div className="cat-row">
         {/* Hardcoded baseline configuration for "All Snacks" state */}
         <div 
-          className={`cat-pill ${activeCat === 'all' ? 'active' : ''}`}
+          className={`cat-pill ${String(activeCat) === 'all' ? 'active' : ''}`}
           onClick={() => handleCategoryClick('all')}
           role="button"
           tabIndex={0}
@@ -52,29 +51,34 @@ export default function CategoryRow({
         </div>
 
         {/* Dynamically mapped categories sourced from the database */}
-        {categories.map((cat) => (
-          <div 
-            key={cat.id} 
-            className={`cat-pill ${activeCat === cat.id ? 'active' : ''}`}
-            onClick={() => handleCategoryClick(cat.id)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleCategoryClick(cat.id);
-              }
-            }}
-          >
-            <div className="cat-pill-details">
-              <div className="cat-pill-name">{cat.label}</div>
-              {cat.product_count !== undefined && (
-                <div className="cat-pill-count">
-                  {cat.product_count} {cat.product_count === 1 ? 'item' : 'items'}
-                </div>
-              )}
+        {categories && categories.map((cat) => {
+          // Explicit string coercion guards against integer vs string type identification mismatches
+          const isActive = String(activeCat) === String(cat.id);
+
+          return (
+            <div 
+              key={cat.id} 
+              className={`cat-pill ${isActive ? 'active' : ''}`}
+              onClick={() => handleCategoryClick(cat.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleCategoryClick(cat.id);
+                }
+              }}
+            >
+              <div className="cat-pill-details">
+                <div className="cat-pill-name">{cat.label}</div>
+                {cat.product_count !== undefined && (
+                  <div className="cat-pill-count">
+                    {cat.product_count} {cat.product_count === 1 ? 'item' : 'items'}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

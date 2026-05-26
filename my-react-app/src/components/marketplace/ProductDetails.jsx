@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react';
 import "/src/styles/ProductDetails.css";
 
-export default function ProductDetails({ product, onBack, onAddCart, currentCount = 0, onUpdateQuantity }) {
-  // Local state keeps track of the chosen volume selection inside this screen session
-  const [qty, setQty] = useState(1);
+export default function ProductDetails({ 
+  product, 
+  onBack, 
+  onAddCart, 
+  currentCount = 0, 
+  onUpdateQuantity 
+}) {
+  // Local track state for items not yet introduced into the cart ecosystem
+  const [localQty, setLocalQty] = useState(1);
 
-  // Sync state if user changes quantity elsewhere or if item is already inside the cart drawer
+  // Sync state if item quantity changes globally or is removed completely
   useEffect(() => {
     if (currentCount > 0) {
-      setQty(currentCount);
+      setLocalQty(currentCount);
     } else {
-      setQty(1);
+      setLocalQty(1);
     }
   }, [currentCount]);
 
   if (!product) return null;
 
-  // 💡 BACKWARD COMPATIBILITY FIELD CHECKERS & FALLBACKS
+  // Backward compatibility normalization
   const displayDesc = product.description || product.desc || "No custom descriptive summary provided.";
-  
-  // 📷 RE-ROUTED PRODUCT IMAGE FILE MATCHING THE STOREFRONT RESOLVER
+  const tagsArray = Array.isArray(product.tags) ? product.tags : [];
   const displayImage = product.product_image || 
                        product.image_url || 
                        product.image || 
@@ -27,36 +32,26 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
 
   const handleIncrement = () => {
     if (currentCount > 0 && onUpdateQuantity) {
-      // If item exists in cart, update global state immediately
       onUpdateQuantity(product.id, 1);
     } else {
-      // If it's a fresh choice, increment local state
-      setQty(q => q + 1);
+      setLocalQty(prev => prev + 1);
     }
   };
 
   const handleDecrement = () => {
     if (currentCount > 0 && onUpdateQuantity) {
-      // If item exists in cart, update global state immediately
       onUpdateQuantity(product.id, -1);
     } else {
-      // If it's a fresh choice, decrement local state safely
-      setQty(q => Math.max(1, q - 1));
+      setLocalQty(prev => Math.max(1, prev - 1));
     }
   };
 
   const handleCommitToBasket = (e) => {
-    if (currentCount > 0) {
-      // Already tracked inside the cart loop
-      return;
-    }
+    if (currentCount > 0) return;
     
-    // Pass execution control back up to mount loop structure
+    // 🛡️ Passing quantity directly as a single transaction rather than running a loop
     if (onAddCart) {
-      // Loop execution match to build the initial state layer array correctly
-      for (let i = 0; i < qty; i++) {
-        onAddCart(e, product.id, product.name);
-      }
+      onAddCart(e, product.id, product.name, localQty);
     }
   };
 
@@ -64,35 +59,31 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
     <div className="product-details-page">
       <div className="details-wrapper">
         
-        {/* BREADCRUMB BACK CONTROL */}
-        <button className="back-home-btn" onClick={onBack}>
+        {/* BREADCRUMB BACK ROW */}
+        <button className="back-home-btn" onClick={onBack} type="button">
           ← Back to Marketplace
         </button>
 
         <div className="product-details-container">
           
-          {/* LEFT: Premium Graphic Asset Frame */}
+          {/* LEFT IMAGE COL */}
           <div className="product-details-image-section">
-            <div className="product-big-emoji-container" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
-              
-              {/* 📷 RENDER RE-ROUTED PRODUCT IMAGE */}
+            <div className="product-big-emoji-container">
               <img 
                 src={displayImage} 
-                alt={product.name} 
+                alt={product.name || "Product Shot"} 
                 className="product-details-main-img"
-                style={{ width: '100%', height: '100%', minHeight: '320px', objectFit: 'cover', display: 'block' }}
+                loading="eager"
               />
 
-              {/* Floating Accent Emoji overlay retained over the image layout */}
               {product.emoji && (
-                <div className="product-big-emoji-bg" style={{ position: 'absolute', top: '16px', left: '16px', fontSize: '1.5rem', backgroundColor: 'rgba(255,255,255,0.9)', padding: '4px 10px', borderRadius: '8px', zIndex: 2 }}>
+                <div className="product-big-emoji-bg">
                   {product.emoji}
                 </div>
               )}
 
-              {/* Badges system ('hot' or 'new' labels) */}
               {product.badge && (
-                <span className={`details-badge ${product.badge}`} style={{ zIndex: 2 }}>
+                <span className={`details-badge label-${product.badge.toLowerCase()}`}>
                   {product.badge === "hot" ? "🔥 Hot" : "✨ New"}
                 </span>
               )}
@@ -100,7 +91,7 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
             <div className="product-meta-pill">📦 Genuine Regional Delicacy</div>
           </div>
 
-          {/* RIGHT: Contextual Core Layout Details */}
+          {/* RIGHT ACCENT META INFO COL */}
           <div className="product-details-content-section">
             <div className="pcard-brand-row">
               <span className="pcard-brand-dot"></span>
@@ -115,13 +106,11 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
               <span className="spec-item">📍 Authenticity Guaranteed</span>
             </div>
 
-            <p className="product-details-description">
-              {displayDesc}
-            </p>
+            <p className="product-details-description">{displayDesc}</p>
 
             <div className="product-details-tags">
-              {product.tags && product.tags.map((tag) => (
-                <span key={tag} className={`pcard-tag tag-${tag}`}>
+              {tagsArray.map((tag, idx) => (
+                <span key={`details-tag-${tag}-${idx}`} className={`pcard-tag tag-${tag}`}>
                   {tag.toUpperCase()}
                 </span>
               ))}
@@ -132,46 +121,51 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
               <span className="price-subtext">Inclusive of all local regional taxes</span>
             </div>
 
-            {/* INTERACTIVE PURCHASE ACTIONS */}
+            {/* INTERACTIVE ROW CONTROLS */}
             <div className="purchase-controls">
               <div className="details-quantity-selector">
                 <button 
+                  type="button"
                   onClick={handleDecrement}
-                  disabled={qty <= 1 && currentCount === 0}
+                  disabled={localQty <= 1 && currentCount === 0}
+                  aria-label="Reduce quantity"
                 >
                   -
                 </button>
-                <span>{qty}</span>
-                <button onClick={handleIncrement}>+</button>
+                <span aria-live="polite">{localQty}</span>
+                <button 
+                  type="button" 
+                  onClick={handleIncrement}
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
               </div>
 
               <button
+                type="button"
                 className={`product-buy-btn btn-main ${currentCount > 0 ? 'added-lock' : ''}`}
                 onClick={handleCommitToBasket}
                 disabled={currentCount > 0}
-                style={{
-                  backgroundColor: currentCount > 0 ? '#10b981' : '',
-                  color: currentCount > 0 ? '#fff' : ''
-                }}
               >
                 {currentCount > 0 
                   ? `✓ Live in Basket (${currentCount} Units)` 
-                  : `Add To Basket • ₹ ${(parseFloat(product.price || 0) * qty).toFixed(2)}`
+                  : `Add To Basket • ₹ ${(parseFloat(product.price || 0) * localQty).toFixed(2)}`
                 }
               </button>
             </div>
 
-            {/* VALUE PROPOSITION SIGNS */}
+            {/* VALUE SEALS */}
             <div className="trust-signals-grid">
               <div className="signal-card">
-                <span>🚚</span>
+                <span className="signal-icon">🚚</span>
                 <div>
                   <h5>Direct Brand Shipping</h5>
                   <p>Dispatched straight from origin kitchens to preserve crispness.</p>
                 </div>
               </div>
               <div className="signal-card">
-                <span>🍃</span>
+                <span className="signal-icon">🍃</span>
                 <div>
                   <h5>100% Preservative Free</h5>
                   <p>Prepared traditionally using traditional family recipes.</p>
@@ -180,6 +174,7 @@ export default function ProductDetails({ product, onBack, onAddCart, currentCoun
             </div>
 
           </div>
+
         </div>
       </div>
     </div>

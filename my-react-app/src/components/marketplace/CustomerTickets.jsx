@@ -7,6 +7,8 @@ export default function CustomerTickets() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchUserTickets = async () => {
       try {
         setLoading(true);
@@ -24,15 +26,27 @@ export default function CustomerTickets() {
         }
 
         const data = await res.json();
-        setTickets(data);
+        
+        if (isMounted) {
+          // Safeguard map arrays against structural backend trace failures
+          setTickets(Array.isArray(data) ? data : []);
+        }
       } catch (err) {
-        setError(err.message);
+        if (isMounted) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) return <div className="ticket-shroud">🔄 Loading your message logs...</div>;
@@ -55,6 +69,11 @@ export default function CustomerTickets() {
         <div className="tickets-history-stack">
           {tickets.map((ticket) => {
             const currentStatus = ticket.status || 'Pending';
+            
+            // Defends against both snake_case database responses and camelCase API structures
+            const assignedTopic = ticket.subjectType || ticket.subject_type || 'General Inquiry';
+            const timestamp = ticket.createdAt || ticket.created_at;
+
             return (
               <div className="ticket-item-card" key={ticket.id}>
                 <div className="ticket-card-meta-row">
@@ -65,17 +84,17 @@ export default function CustomerTickets() {
                 </div>
 
                 <div className="ticket-card-body">
-                  <div className="ticket-type-label">Category: <b>{ticket.subject_type || 'General Inquiry'}</b></div>
+                  <div className="ticket-type-label">Category: <b>{assignedTopic}</b></div>
                   <p className="ticket-message-payload">"{ticket.message}"</p>
                 </div>
 
                 <div className="ticket-card-footer">
                   <span className="ticket-timestamp">
-                    Filed on: {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('en-IN', {
+                    Filed on: {timestamp ? new Date(timestamp).toLocaleDateString('en-IN', {
                       day: 'numeric', month: 'short', year: 'numeric'
                     }) : 'Recent'}
                   </span>
-                  {currentStatus === 'Resolved' && (
+                  {currentStatus.toLowerCase() === 'resolved' && (
                     <span className="resolution-notice">✅ Check your inbox for our agent's resolution summary email.</span>
                   )}
                 </div>

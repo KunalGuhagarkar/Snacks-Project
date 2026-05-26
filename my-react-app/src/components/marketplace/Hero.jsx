@@ -1,7 +1,17 @@
 export default function Hero({ onActionToast }) {
+  
+  // Handles elegant, animated smooth scroll jumps across component viewports
+  const handleScrollJump = (e, elementId) => {
+    e.preventDefault();
+    const targetElement = document.getElementById(elementId);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <section className="hero">
-      <div>
+      <div className="hero-left-content">
         <div className="hero-eyebrow">
           🇮🇳 India's #1 Traditional Snacks Marketplace
         </div>
@@ -16,6 +26,7 @@ export default function Hero({ onActionToast }) {
           From Sweet Karam Coffee's Murukku to Kerala's Banana Chips — we bring
           500+ beloved snack brands from every corner of India to your doorstep.
         </p>
+        
         <div className="hero-chips">
           <span className="hero-chip">🏠 Sweet Karam Coffee</span>
           <span className="hero-chip">🥥 Haldirams</span>
@@ -23,14 +34,24 @@ export default function Hero({ onActionToast }) {
           <span className="hero-chip">🫙 Adyar Ananda Bhavan</span>
           <span className="hero-chip">+496 more brands</span>
         </div>
+        
         <div className="hero-actions">
-          <a href="#browse" className="btn-hero">
+          <a 
+            href="#browse" 
+            className="btn-hero"
+            onClick={(e) => handleScrollJump(e, "browse")}
+          >
             Explore Snacks
           </a>
-          <a href="#brands" className="btn-hero-ghost">
+          <a 
+            href="#brands" 
+            className="btn-hero-ghost"
+            onClick={(e) => handleScrollJump(e, "brands")}
+          >
             Browse Brands
           </a>
         </div>
+        
         <div className="hero-stats">
           <div className="stat-item">
             <div className="stat-num">500+</div>
@@ -53,12 +74,15 @@ export default function Hero({ onActionToast }) {
 
       <div className="hero-right">
         <div className="brand-mosaic">
-          <div
+          {/* Accessible Interactive Component */}
+          <button
+            type="button"
             className="brand-card featured"
             onClick={() => onActionToast("Sweet Karam Coffee — 48 products")}
+            aria-label="View Sweet Karam Coffee brand details"
           >
             <div className="brand-card-icon">☕</div>
-            <div>
+            <div style={{ textAlign: 'left' }}>
               <div className="brand-card-name">Sweet Karam Coffee</div>
               <div className="brand-card-loc">📍 Chennai, Tamil Nadu</div>
               <div className="brand-card-items">48 products available</div>
@@ -67,7 +91,8 @@ export default function Hero({ onActionToast }) {
               </div>
             </div>
             <div className="brand-card-badge">Top Brand</div>
-          </div>
+          </button>
+
           {[
             {
               id: "grand",
@@ -98,16 +123,20 @@ export default function Hero({ onActionToast }) {
               count: "29 products",
             },
           ].map((b) => (
-            <div
+            <button
+              type="button"
               className="brand-card"
               key={b.id}
               onClick={() => onActionToast(`${b.name} — ${b.count}`)}
+              aria-label={`View ${b.name} details`}
             >
               <div className="brand-card-icon">{b.emoji}</div>
-              <div className="brand-card-name">{b.name}</div>
-              <div className="brand-card-loc">📍 {b.loc}</div>
-              <div className="brand-card-items">{b.count}</div>
-            </div>
+              <div style={{ textAlign: 'left' }}>
+                <div className="brand-card-name">{b.name}</div>
+                <div className="brand-card-loc">📍 {b.loc}</div>
+                <div className="brand-card-items">{b.count}</div>
+              </div>
+            </button>
           ))}
         </div>
       </div>

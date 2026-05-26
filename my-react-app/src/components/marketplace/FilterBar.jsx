@@ -10,16 +10,19 @@ const FILTERS = [
 export default function FilterBar({ activeFilter = 'all', setActiveFilter, totalCount = 0 }) {
   return (
     <div className="filter-section" id="browse">
-      {FILTERS.map((filt) => (
-        <button 
-          key={filt.id} 
-          type="button" // Explicit type prevents accidental form submissions if placed inside a form
-          className={`filter-pill ${activeFilter === filt.id ? 'on' : ''}`}
-          onClick={() => setActiveFilter && setActiveFilter(filt.id)}
-        >
-          {filt.label}
-        </button>
-      ))}
+      {/* 🚀 Encapsulating buttons enables scrollable X-axis overflow tracks on small screens */}
+      <div className="filter-pills-track">
+        {FILTERS.map((filt) => (
+          <button 
+            key={filt.id} 
+            type="button" // Explicit type prevents accidental form submissions if placed inside a form
+            className={`filter-pill ${activeFilter === filt.id ? 'on' : ''}`}
+            onClick={() => setActiveFilter && setActiveFilter(filt.id)}
+          >
+            {filt.label}
+          </button>
+        ))}
+      </div>
       
       {/* Handles count safely while database network requests are pending */}
       <span className="filter-count">

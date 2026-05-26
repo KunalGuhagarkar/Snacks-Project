@@ -547,26 +547,200 @@
 /* ==========================================================================
    6. MAINTENANCE REGISTRY POPUP MODALS WINDOWS
    ========================================================================== */
-.ap-modal-overlay-shroud {
+.ap-modal-backdrop {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(15, 23, 42, 0.5);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.ap-modal-box-window {
-  background-color: #fff;
-  padding: 30px;
+
+.ap-modal-window {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 580px;
   border-radius: 12px;
-  width: 550px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: scaleInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.ap-modal-form { display: flex; flex-direction: column; gap: 12px; }
-.ap-form-split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.ap-form-text-input, .ap-form-dropdown-input, .ap-form-textarea-input {
-  padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box;
+
+.ap-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #f8fafc;
 }
-.ap-modal-actions-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-.ap-modal-btn-cancel { background: none; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
-.ap-modal-btn-commit { background: #ea580c; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+.ap-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ap-modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.ap-modal-close-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.ap-modal-close-icon:hover {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+.ap-modal-form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* Modal Internal Layout Grids */
+.ap-form-row {
+  width: 100%;
+}
+
+.ap-form-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.ap-form-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* Component Forms Inputs UI */
+.ap-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ap-form-field span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.ap-form-field .required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.ap-form-field input,
+.ap-form-field select,
+.ap-form-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ap-form-field textarea {
+  resize: vertical;
+}
+
+/* Interactive Focus System */
+.ap-form-field input:focus,
+.ap-form-field select:focus,
+.ap-form-field textarea:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.ap-form-field input::placeholder,
+.ap-form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Footer Control Action Items */
+.ap-modal-footer {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.ap-btn-primary,
+.ap-btn-secondary {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ap-btn-primary {
+  background-color: #ea580c;
+  color: #ffffff;
+  border: 1px solid #ea580c;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ap-btn-primary:hover {
+  background-color: #c2410c;
+  border-color: #c2410c;
+}
+
+.ap-btn-secondary {
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.ap-btn-secondary:hover {
+  background-color: #f8fafc;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+/* Smooth Entrance CSS Transitions Animations */
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleInModal {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

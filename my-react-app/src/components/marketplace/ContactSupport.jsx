@@ -7,7 +7,7 @@ export default function ContactSupport({
   currentUser,
   onActionToast,
 }) {
-  const [activeTab, setActiveTab] = useState("submit"); // Toggle flags: "submit" | "history"
+  const [activeTab, setActiveTab] = useState("submit"); // "submit" | "history"
   const [subjectType, setSubjectType] = useState("General Inquiry");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -37,18 +37,22 @@ export default function ContactSupport({
       });
   }, [currentUser]);
 
-  // SAFE COMPILER EFFECT: Pre-fetches the ticket count as soon as the modal turns active
+  // Fetches ticket data immediately when the modal opens
   useEffect(() => {
     if (isOpen && currentUser?.id) {
-      // Wrapping this in a microtask/timeout breaks the synchronous execution chain,
-      // keeping the ESLint 'set-state-in-effect' rule completely satisfied.
-      const timer = setTimeout(() => {
-        fetchTicketHistory();
-      }, 0);
-
-      return () => clearTimeout(timer);
+      fetchTicketHistory();
     }
   }, [isOpen, currentUser?.id, fetchTicketHistory]);
+
+  // Clean up component states gracefully ONLY when the modal transitions to hidden
+  useEffect(() => {
+    if (!isOpen) {
+      setMessage("");
+      setSubjectType("General Inquiry");
+      setTickets([]);
+      setActiveTab("submit");
+    }
+  }, [isOpen]);
 
   // Custom tab selection handler
   const handleTabChange = (targetTab) => {
@@ -56,14 +60,6 @@ export default function ContactSupport({
     if (targetTab === "history" && currentUser?.id) {
       fetchTicketHistory();
     }
-  };
-
-  // Intercept modal closing to reset state locally safely
-  const handleModalClose = () => {
-    setMessage("");
-    setTickets([]);
-    setActiveTab("submit");
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -96,7 +92,7 @@ export default function ContactSupport({
           fetchTicketHistory();
           setActiveTab("history");
         } else {
-          handleModalClose();
+          onClose();
         }
       } else {
         onActionToast(`🛑 ${responsePayload.error || "Submission failed."}`);
@@ -110,7 +106,7 @@ export default function ContactSupport({
   };
 
   return (
-    <div className="support-modal-backdrop" onClick={handleModalClose}>
+    <div className="support-modal-backdrop" onClick={onClose}>
       <div
         className="support-modal-window"
         onClick={(e) => e.stopPropagation()}
@@ -133,7 +129,7 @@ export default function ContactSupport({
               Track Progress ({tickets.length})
             </button>
           )}
-          <button type="button" className="modal-close-x" onClick={handleModalClose}>
+          <button type="button" className="modal-close-x" onClick={onClose}>
             &times;
           </button>
         </div>
@@ -189,8 +185,7 @@ export default function ContactSupport({
               ) : tickets.length === 0 ? (
                 <div className="support-history-empty">
                   <p>
-                    No historical queries mapped to your identity footprint
-                    profile.
+                    No historical queries mapped to your identity footprint profile.
                   </p>
                 </div>
               ) : (
@@ -214,9 +209,7 @@ export default function ContactSupport({
                         <span className="ticket-date">
                           Filed:{" "}
                           {ticket.createdAt
-                            ? new Date(ticket.createdAt).toLocaleDateString(
-                                "en-IN",
-                              )
+                            ? new Date(ticket.createdAt).toLocaleDateString("en-IN")
                             : "Recent"}
                         </span>
                       </div>

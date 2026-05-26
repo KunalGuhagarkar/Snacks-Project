@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { GoogleLogin } from "@react-oauth/google"; // 👈 Integrated Google OAuth Component
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false); 
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,7 +11,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     phone: "",
   });
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); 
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -21,7 +21,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     if (error) setError("");
   };
 
-  // Reset internal states when closing the modal window
   const handleClose = () => {
     setError("");
     setSuccessMessage("");
@@ -48,7 +47,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
       setFormData({ name: "", email: "", password: "", phone: "" });
       
-      // Mirror native account success handling to save user sessions to state
       onAuthSuccess(
         data.user,
         "Logged in successfully via Google! 🚀"
@@ -61,7 +59,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
   };
 
-  // 🚀 HANDLER B: Unified submit handler for Native Registration, Login, and Forgot Password
+  // 🚀 HANDLER B: Unified submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -93,7 +91,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    // Validation gate for normal login/registration routes
+    // 💡 Scenario B: Normal Registration / Login Gate Validation
     if (!formData.email || !formData.password || (isSignUp && !formData.name)) {
       setError("Please fill in all required fields.");
       setLoading(false);
@@ -182,7 +180,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </p>
         </div>
 
-        {/* Hide default navigation tabs if dealing with password recovery */}
         {!isForgotPassword && (
           <div style={{ display: "flex", background: "var(--cream-2)", borderRadius: "8px", padding: "4px", marginBottom: "20px" }}>
             <button
@@ -215,8 +212,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          
-          {/* Dynamic Input Matrix Form Selection Engine */}
           {isSignUp && !isForgotPassword && (
             <div>
               <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--ink)", marginBottom: "4px" }}>Full Name *</label>
@@ -241,7 +236,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--ink)", marginBottom: "4px" }}>Password *</label>
               <input type="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="••••••••" required style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid var(--cream-3)", background: "var(--cream-2)", boxSizing: "border-box" }} />
               
-              {/* Forgot Password trigger anchor */}
               {!isSignUp && (
                 <div style={{ textAlign: "right", marginTop: "6px" }}>
                   <span 
@@ -271,9 +265,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           )}
         </form>
 
-        {/* =====================================================================
-            🌐 THE SOCIAL SEPARATOR & GOOGLE ONE-TAP BUTTON INTERFACE
-            ===================================================================== */}
         {!isForgotPassword && (
           <>
             <div style={{ display: "flex", alignItems: "center", margin: "20px 0", gap: "10px" }}>
@@ -289,7 +280,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 theme="filled_blue"
                 shape="pill"
                 text="continue_with"
-                width="336px" // Perfectly matches typical inner content width targets
+                width="336px"
               />
             </div>
           </>

@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  // Automatically extract '?token=xyz...' from the browser URL address bar
+  // Extract token parameter safely
   const token = searchParams.get("token");
+
+  // Keep a safe reference to the active redirect timeout to prevent unmounted navigation leaks
+  const redirectTimerRef = useRef(null);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,10 +17,18 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Validate presence of authorization parameter on mount
   useEffect(() => {
     if (!token) {
       setError("❌ Missing security authorization token. This link is invalid.");
     }
+
+    // 🛡️ Guard Cleanup: Cancel any pending redirect timers if the user navigates away
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
   }, [token]);
 
   const handleResetSubmit = async (e) => {
@@ -50,9 +61,13 @@ export default function ResetPassword() {
         throw new Error(data.message || "Failed to reset password security parameters.");
       }
 
+      // 🔐 Security Wipe: Zero out password state values immediately upon backend confirmation
+      setNewPassword("");
+      setConfirmPassword("");
       setSuccess(true);
-      // Auto-redirect user back to your marketplace root layout window after 3 seconds
-      setTimeout(() => {
+
+      // Trigger safe reference redirect
+      redirectTimerRef.current = setTimeout(() => {
         navigate("/");
       }, 3500);
 
@@ -64,59 +79,64 @@ export default function ResetPassword() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--cream-1, #faf8f5)", padding: "20px" }}>
-      <div style={{ background: "#fff", width: "100%", maxWidth: "400px", padding: "32px", borderRadius: "16px", boxShadow: "0 12px 40px rgba(28, 20, 9, 0.1)" }}>
+    <div className="auth-page-shroud">
+      <div className="auth-card-panel">
         
-        <div style={{ textAlign: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontFamily: "Fraunces, serif", margin: "0 0 8px 0", fontSize: "1.8rem" }}>
-            नाल<span style={{ color: "#e07b2a" }}>पाक</span>
+        {/* LOGO TITLE SECTION */}
+        <div className="auth-card-header">
+          <h2 className="brand-title">
+            नाल<span>पाक</span>
           </h2>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#666" }}>Update Your Account Credentials</p>
+          <p className="brand-subtitle">Update Your Account Credentials</p>
         </div>
 
+        {/* CONDITION STATE MESSAGES */}
         {error && (
-          <div style={{ background: "#fdf2f2", color: "#ec4899", padding: "10px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px", textAlign: "center", border: "1px solid #fce7f3" }}>
+          <div className="auth-message-box box-error" role="alert">
             {error}
           </div>
         )}
 
         {success ? (
-          <div style={{ background: "#f0fdf4", color: "#166534", padding: "16px", borderRadius: "8px", fontSize: "0.9rem", textAlign: "center", border: "1px solid #bbf7d0" }}>
-            🎉 <strong>Success!</strong> Your password has been updated securely. Redirecting you to the home terminal to log in...
+          <div className="auth-message-box box-success" role="status">
+            🎉 <strong>Success!</strong> Your password has been updated securely. 
+            Redirecting you to the home terminal to log in...
           </div>
         ) : (
-          <form onSubmit={handleResetSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", marginBottom: "4px" }}>New Password</label>
+          <form onSubmit={handleResetSubmit} className="auth-form-stack">
+            
+            <div className="auth-input-group">
+              <label htmlFor="new-password-field">New Password</label>
               <input 
+                id="new-password-field"
                 type="password" 
                 placeholder="••••••••" 
                 required 
                 disabled={!token || loading}
                 value={newPassword} 
                 onChange={(e) => setNewPassword(e.target.value)} 
-                style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", boxSizing: "border-box" }}
+                autoComplete="new-password"
               />
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", marginBottom: "4px" }}>Confirm New Password</label>
+            <div className="auth-input-group">
+              <label htmlFor="confirm-password-field">Confirm New Password</label>
               <input 
+                id="confirm-password-field"
                 type="password" 
                 placeholder="••••••••" 
                 required 
                 disabled={!token || loading}
                 value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)} 
-                style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", boxSizing: "border-box" }}
+                autoComplete="new-password"
               />
             </div>
 
             <button 
               type="submit" 
               disabled={!token || loading} 
-              className="btn-main" 
-              style={{ width: "100%", padding: "14px", background: "#e07b2a", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "1rem", cursor: "pointer", marginTop: "10px" }}
+              className="btn-auth-submit"
             >
               {loading ? "Overriding Passkey..." : "Update Password →"}
             </button>

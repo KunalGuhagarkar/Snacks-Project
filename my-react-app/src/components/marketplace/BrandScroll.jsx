@@ -2,11 +2,12 @@ export default function BrandScroll({
   activeBrand = 'all', 
   setActiveBrand, 
   onActionToast,
-  brands = [] // 👈 Dynamically passed from the backend database state
+  brands = [] // Dynamically passed from the backend database state
 }) {
   
   const handleBrandClick = (id) => {
     if (setActiveBrand) {
+      // Cast integers explicitly to matching strings if desired, or pass cleanly
       setActiveBrand(id);
     }
   };
@@ -35,7 +36,7 @@ export default function BrandScroll({
       <div className="brands-scroll">
         {/* Baseline hardcoded option for "All Brands" selection */}
         <div 
-          className={`brand-chip ${activeBrand === 'all' ? 'selected' : ''}`} 
+          className={`brand-chip ${String(activeBrand) === 'all' ? 'selected' : ''}`} 
           onClick={() => handleBrandClick('all')}
           role="button"
           tabIndex={0}
@@ -51,26 +52,31 @@ export default function BrandScroll({
         </div>
 
         {/* Dynamically mapped items coming from your database API */}
-        {brands.map((brand) => (
-          <div 
-            key={brand.id} 
-            className={`brand-chip ${activeBrand === brand.id ? 'selected' : ''}`} 
-            onClick={() => handleBrandClick(brand.id)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleBrandClick(brand.id);
-              }
-            }}
-          >
-            <div className="brand-chip-info">
-              <div className="brand-chip-name">{brand.name}</div>
-              {/* Optional verification checks handled via database fields */}
-              {brand.is_verified && <div className="brand-chip-verified">✓ Verified</div>}
+        {brands && brands.map((brand) => {
+          // Explicit string coercion guards against integer vs string identification mismatches
+          const isSelected = String(activeBrand) === String(brand.id);
+          
+          return (
+            <div 
+              key={brand.id} 
+              className={`brand-chip ${isSelected ? 'selected' : ''}`} 
+              onClick={() => handleBrandClick(brand.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleBrandClick(brand.id);
+                }
+              }}
+            >
+              <div className="brand-chip-info">
+                <div className="brand-chip-name">{brand.name}</div>
+                {/* Optional verification checks handled via database fields */}
+                {brand.is_verified && <div className="brand-chip-verified">✓ Verified</div>}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
